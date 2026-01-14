@@ -41,6 +41,17 @@ export type ImageSearchItem = {
 
 export type ImageSearchResponse = ImageSearchItem[];
 
+export type EPICImage = {
+    identifier: string;
+    caption: string;
+    image: string;
+    date: string;
+    centroid_coordinates: {
+        lat: number;
+        lon: number;
+    };
+};
+
 /* ============================
    API Core
 ============================ */
@@ -92,11 +103,6 @@ export async function getMarsPhotos(
     const response = await fetch(url);
 
     if (!response.ok) {
-        // For this API, a 404 might just mean no photos on that day.
-        // We'll return an empty array and let the UI handle the message.
-        if (response.status === 404) {
-            return [];
-        }
         throw new Error(`NASA API error (${response.status})`);
     }
 
@@ -126,3 +132,22 @@ export async function searchImages(
         })
         .filter(Boolean) as ImageSearchItem[];
 }
+
+export async function getEPICImages(date: string): Promise<EPICImage[]> {
+    const response = await fetch(
+        `https://api.nasa.gov/EPIC/api/natural/date/${date}?api_key=${NASA_API_KEY}`
+    );
+
+    if (!response.ok) {
+        throw new Error(`NASA EPIC API error (${response.status})`);
+    }
+
+    return (await response.json()) as EPICImage[];
+}
+
+export function getEPICImageUrl(date: string, imageName: string): string {
+    // Date format: YYYY-MM-DD -> YYYY/MM/DD for the URL
+    const [year, month, day] = date.split("-");
+    return `https://api.nasa.gov/EPIC/archive/natural/${year}/${month}/${day}/png/${imageName}.png?api_key=${NASA_API_KEY}`;
+}
+
