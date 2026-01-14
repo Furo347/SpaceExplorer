@@ -1,4 +1,11 @@
+// services/nasa.ts
 import { NASA_API_KEY } from "../config";
+
+const NASA_BASE_URL = "https://api.nasa.gov";
+
+/* =========================
+   Types
+========================= */
 
 export type APODResponse = {
     title: string;
@@ -25,7 +32,7 @@ export type MarsPhoto = {
     };
 };
 
-export type MarsResponse = {
+type MarsResponse = {
     photos: MarsPhoto[];
 };
 
@@ -35,56 +42,67 @@ export type ImageSearchItem = {
     imageUrl: string;
 };
 
-export type ImageSearchResponse = ImageSearchItem[];
+/* =========================
+   API helper
+========================= */
 
-const NASA_BASE_URL = "https://api.nasa.gov";
-
-async function apiGet<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+async function apiGet<T>(
+    endpoint: string,
+    params: Record<string, string> = {}
+): Promise<T> {
     const query = new URLSearchParams({
         api_key: NASA_API_KEY,
         ...params,
     });
 
-    const url = `${NASA_BASE_URL}${endpoint}?${query.toString()}`;
-
-    const response = await fetch(url);
+    const response = await fetch(
+        `${NASA_BASE_URL}${endpoint}?${query.toString()}`
+    );
 
     if (!response.ok) {
         throw new Error(`NASA API error (${response.status})`);
     }
 
-    return (await response.json()) as T;
+    return response.json() as Promise<T>;
 }
 
+/* =========================
+   APOD
+========================= */
 
-export const getAPOD = async (date?: string) => {
-    const url = new URL("https://api.nasa.gov/planetary/apod");
-    url.searchParams.append("api_key", "DEMO_KEY");
+export function getAPOD(date?: string): Promise<APODResponse> {
+    return apiGet<APODResponse>("/planetary/apod", date ? { date } : {});
+}
 
-    if (date) url.searchParams.append("date", date);
+/* =========================
+   Mars Rover
+========================= */
 
-    const response = await fetch(url.toString());
-    return response.json();
-};
-
-
-
-
-export async function getMarsPhotos(rover: string, date: string): Promise<MarsPhoto[]> {
-    const result = await apiGet<MarsResponse>(`/mars-photos/api/v1/rovers/${rover}/photos`, {
-        earth_date: date,
-    });
+export async function getMarsPhotos(
+    rover: string,
+    date: string
+): Promise<MarsPhoto[]> {
+    const result = await apiGet<MarsResponse>(
+        `/mars-photos/api/v1/rovers/${rover}/photos`,
+        { earth_date: date }
+    );
 
     return result.photos;
 }
 
-export async function searchImages(query: string): Promise<ImageSearchResponse> {
+/* =========================
+   Image Search
+========================= */
+
+export async function searchImages(
+    query: string
+): Promise<ImageSearchItem[]> {
     const data = await apiGet<any>("/search", { q: query });
 
-    const collection = data.collection?.items ?? [];
+    const items = data.collection?.items ?? [];
 
-    return collection
-        .map((item: any) => {
+    return items
+        .map((item: any): ImageSearchItem | null => {
             const info = item.data?.[0];
             const img = item.links?.find((l: any) => l.render === "image");
 
@@ -92,7 +110,7 @@ export async function searchImages(query: string): Promise<ImageSearchResponse> 
 
             return {
                 title: info.title,
-                description: info.description || "",
+                description: info.description ?? "",
                 imageUrl: img.href,
             };
         })
