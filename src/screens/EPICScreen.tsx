@@ -7,9 +7,13 @@ import Title from "../ui/components/Title";
 import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
+import FavoriteButton from "../ui/components/FavoriteButton";
 
 import { getEPICImages, getEPICImageUrl, EPICImage } from "../services/nasa";
 import { theme } from "../ui/theme";
+import { useFavorites } from "../hooks/useFavorites";
+import { useHistory } from "../hooks/useHistory";
+import { SavedImage } from "../types/storage";
 
 export default function EPICScreen() {
     const [images, setImages] = useState<EPICImage[]>([]);
@@ -18,6 +22,9 @@ export default function EPICScreen() {
 
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
+
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const { addToHistory } = useHistory();
 
     // EPIC data is available from 2015-06-13
     const MIN_DATE = new Date("2015-06-13");
@@ -47,6 +54,21 @@ export default function EPICScreen() {
             if (data.length === 0) {
                 setError("Aucune image disponible pour cette date. Essayez une date antérieure.");
             }
+
+            // Add images to history
+            data.forEach((image) => {
+                const imageUrl = getEPICImageUrl(formatDate(dateToFetch), image.image);
+                const savedImage: SavedImage = {
+                    id: `epic-${image.identifier}`,
+                    source: "epic",
+                    title: "Terre vue de l'espace",
+                    imageUrl: imageUrl,
+                    date: image.date.split(" ")[0],
+                    description: image.caption || `Lat: ${image.centroid_coordinates.lat.toFixed(2)}° | Lon: ${image.centroid_coordinates.lon.toFixed(2)}°`,
+                    savedAt: new Date().toISOString(),
+                };
+                addToHistory(savedImage);
+            });
 
             setImages(data);
         } catch (e) {
@@ -155,9 +177,28 @@ export default function EPICScreen() {
 
                         {images.map((image) => (
                             <Card key={image.identifier} style={{ marginTop: 10 }}>
-                                <Title size="md" style={{ textAlign: "center", marginBottom: 10 }}>
-                                    Terre vue de l'espace
-                                </Title>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                    <Title size="md" style={{ flex: 1, textAlign: "center" }}>
+                                        Terre vue de l'espace
+                                    </Title>
+                                    <FavoriteButton
+                                        isFavorite={isFavorite(`epic-${image.identifier}`)}
+                                        onPress={() => {
+                                            const imageUrl = getEPICImageUrl(formatDate(date), image.image);
+                                            const savedImage: SavedImage = {
+                                                id: `epic-${image.identifier}`,
+                                                source: "epic",
+                                                title: "Terre vue de l'espace",
+                                                imageUrl: imageUrl,
+                                                date: image.date.split(" ")[0],
+                                                description: image.caption || `Lat: ${image.centroid_coordinates.lat.toFixed(2)}° | Lon: ${image.centroid_coordinates.lon.toFixed(2)}°`,
+                                                savedAt: new Date().toISOString(),
+                                            };
+                                            toggleFavorite(savedImage);
+                                        }}
+                                        size={28}
+                                    />
+                                </View>
 
                                 <Image
                                     source={{ uri: getEPICImageUrl(formatDate(date), image.image) }}

@@ -7,9 +7,13 @@ import Title from "../ui/components/Title";
 import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
+import FavoriteButton from "../ui/components/FavoriteButton";
 
 import { getAPOD } from "../services/nasa";
 import { theme } from "../ui/theme";
+import { useFavorites } from "../hooks/useFavorites";
+import { useHistory } from "../hooks/useHistory";
+import { SavedImage } from "../types/storage";
 
 export default function APODScreen() {
     const [apod, setApod] = useState<any>(null);
@@ -18,6 +22,9 @@ export default function APODScreen() {
 
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
+
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const { addToHistory } = useHistory();
 
     const MIN_DATE = new Date("1995-06-16");
     const MAX_DATE = new Date();
@@ -34,6 +41,20 @@ export default function APODScreen() {
                 : await getAPOD();
 
             setApod(data);
+
+            // Add to history
+            if (data && data.media_type === "image") {
+                const savedImage: SavedImage = {
+                    id: `apod-${data.date}`,
+                    source: "apod",
+                    title: data.title,
+                    imageUrl: data.url,
+                    date: data.date,
+                    description: data.explanation,
+                    savedAt: new Date().toISOString(),
+                };
+                addToHistory(savedImage);
+            }
         } catch (e) {
             setError("Impossible de charger l'image APOD pour cette date.");
             setApod(null);
@@ -103,9 +124,29 @@ export default function APODScreen() {
                 ) : (
                     apod && (
                         <Card style={{ marginTop: 15 }}>
-                            <Title size="md" style={{ textAlign: "center", marginBottom: 10 }}>
-                                {apod.title}
-                            </Title>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                <Title size="md" style={{ flex: 1, textAlign: "center" }}>
+                                    {apod.title}
+                                </Title>
+                                {apod.media_type === "image" && (
+                                    <FavoriteButton
+                                        isFavorite={isFavorite(`apod-${apod.date}`)}
+                                        onPress={() => {
+                                            const savedImage: SavedImage = {
+                                                id: `apod-${apod.date}`,
+                                                source: "apod",
+                                                title: apod.title,
+                                                imageUrl: apod.url,
+                                                date: apod.date,
+                                                description: apod.explanation,
+                                                savedAt: new Date().toISOString(),
+                                            };
+                                            toggleFavorite(savedImage);
+                                        }}
+                                        size={28}
+                                    />
+                                )}
+                            </View>
 
                             {apod.media_type === "image" ? (
                                 <Image

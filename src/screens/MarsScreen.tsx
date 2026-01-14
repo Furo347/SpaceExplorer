@@ -7,9 +7,13 @@ import Title from "../ui/components/Title";
 import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
+import FavoriteButton from "../ui/components/FavoriteButton";
 
 import { getMarsPhotos, MarsPhoto } from "../services/nasa";
 import { theme } from "../ui/theme";
+import { useFavorites } from "../hooks/useFavorites";
+import { useHistory } from "../hooks/useHistory";
+import { SavedImage } from "../types/storage";
 
 type RoverOption = {
     label: string;
@@ -29,6 +33,9 @@ export default function MarsRoverScreen() {
 
     const [date, setDate] = useState(new Date("2015-09-27"));
     const [showPicker, setShowPicker] = useState(false);
+
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const { addToHistory } = useHistory();
 
     const getMinDateForRover = (roverName: string) => {
         switch (roverName.toLowerCase()) {
@@ -69,6 +76,20 @@ export default function MarsRoverScreen() {
             if (data.length === 0) {
                 setError("Aucune photo trouvée pour ce rover autour de cette date.");
             }
+
+            // Add photos to history
+            data.forEach((photo) => {
+                const savedImage: SavedImage = {
+                    id: `mars-${photo.id}`,
+                    source: "mars",
+                    title: photo.camera.full_name,
+                    imageUrl: photo.img_src,
+                    date: photo.earth_date,
+                    description: `Rover: ${photo.rover.name} | Camera: ${photo.camera.full_name}`,
+                    savedAt: new Date().toISOString(),
+                };
+                addToHistory(savedImage);
+            });
 
             setPhotos(data);
         } catch (e) {
@@ -166,9 +187,27 @@ export default function MarsRoverScreen() {
                 ) : (
                     photos.map((photo) => (
                         <Card key={photo.id} style={{ marginTop: 15 }}>
-                            <Title size="md" style={{ textAlign: "center", marginBottom: 10 }}>
-                                {photo.camera.full_name}
-                            </Title>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                <Title size="md" style={{ flex: 1, textAlign: "center" }}>
+                                    {photo.camera.full_name}
+                                </Title>
+                                <FavoriteButton
+                                    isFavorite={isFavorite(`mars-${photo.id}`)}
+                                    onPress={() => {
+                                        const savedImage: SavedImage = {
+                                            id: `mars-${photo.id}`,
+                                            source: "mars",
+                                            title: photo.camera.full_name,
+                                            imageUrl: photo.img_src,
+                                            date: photo.earth_date,
+                                            description: `Rover: ${photo.rover.name} | Camera: ${photo.camera.full_name}`,
+                                            savedAt: new Date().toISOString(),
+                                        };
+                                        toggleFavorite(savedImage);
+                                    }}
+                                    size={28}
+                                />
+                            </View>
                             <Image
                                 source={{ uri: photo.img_src }}
                                 style={{ width: "100%", height: 250, borderRadius: 10 }}
