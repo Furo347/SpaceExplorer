@@ -1,195 +1,148 @@
-import React, { useEffect, useState } from "react";
-import {
-    View,
-    Text,
-    Image,
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    Platform,
-    StyleSheet,
-} from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { getAPOD, APODResponse } from "../services/nasa";
+import React, { useState, useEffect } from "react";
+import { Image, Text, Platform, ScrollView, View } from "react-native";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
-const MIN_DATE = new Date("1995-06-16");
-const MAX_DATE = new Date();
+import Screen from "../ui/components/Screen";
+import Title from "../ui/components/Title";
+import Card from "../ui/components/Card";
+import PrimaryButton from "../ui/components/PrimaryButton";
+import Loader from "../ui/components/Loader";
 
-function formatDate(date: Date): string {
-    return date.toISOString().split("T")[0];
-}
+import { getAPOD } from "../services/nasa";
+import { theme } from "../ui/theme";
 
 export default function APODScreen() {
-    const [apod, setApod] = useState<APODResponse | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [apod, setApod] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [date, setDate] = useState<Date>(new Date());
-    const [showPicker, setShowPicker] = useState<boolean>(false);
+    const [date, setDate] = useState(new Date());
+    const [showPicker, setShowPicker] = useState(false);
 
-    async function loadAPOD(selectedDate?: Date) {
+    const MIN_DATE = new Date("1995-06-16");
+    const MAX_DATE = new Date();
+
+    const formatDate = (d: Date) => d.toISOString().split("T")[0];
+
+    const fetchAPODData = async (selectedDate?: Date) => {
         try {
             setLoading(true);
             setError(null);
 
-            const data = await getAPOD(
-                selectedDate ? formatDate(selectedDate) : undefined
-            );
+            const data = selectedDate
+                ? await getAPOD(formatDate(selectedDate))
+                : await getAPOD();
 
             setApod(data);
-        } catch {
-            setError("Impossible de charger l'image astronomique du jour.");
+        } catch (e) {
+            setError("Impossible de charger l'image APOD pour cette date.");
             setApod(null);
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     useEffect(() => {
-        loadAPOD();
+        fetchAPODData();
     }, []);
 
-    function onDateChange(_: unknown, selected?: Date) {
-        setShowPicker(false);
-
-        if (!selected) return;
-
-        if (selected < MIN_DATE || selected > MAX_DATE) {
-            setError(
-                "La date doit être comprise entre le 16 juin 1995 et aujourd’hui."
-            );
+    const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+        if (!selectedDate) return;
+        if (selectedDate < MIN_DATE || selectedDate > MAX_DATE) {
+            setError("Veuillez choisir une date entre le 16/06/1995 et aujourd’hui.");
             return;
         }
-
-        setDate(selected);
-        loadAPOD(selected);
-    }
+        setDate(selectedDate);
+    };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.header}>NASA · Image du jour</Text>
+        <Screen>
+            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+                <Title size="lg" style={{ textAlign: "center", marginBottom: 20 }}>
+                    NASA APOD
+                </Title>
 
-            <Pressable
-                style={styles.dateButton}
-                onPress={() => setShowPicker(true)}
-            >
-                <Text style={styles.dateButtonText}>
-                    Choisir une date
-                </Text>
-            </Pressable>
+                <PrimaryButton title="Choisir une date" onPress={() => setShowPicker(true)} />
 
-            {showPicker && (
-                <DateTimePicker
-                    value={date}
-                    mode="date"
-                    display={Platform.OS === "ios" ? "spinner" : "default"}
-                    minimumDate={MIN_DATE}
-                    maximumDate={MAX_DATE}
-                    onChange={onDateChange}
-                />
-            )}
-
-            {loading && <ActivityIndicator size="large" style={{ marginTop: 40 }} />}
-
-            {error && <Text style={styles.error}>{error}</Text>}
-
-            {!loading && apod && (
-                <View style={styles.card}>
-                    <Text style={styles.title}>{apod.title}</Text>
-                    <Text style={styles.date}>{apod.date}</Text>
-
-                    {apod.media_type === "image" ? (
-                        <Image
-                            source={{ uri: apod.url }}
-                            style={styles.image}
-                            resizeMode="cover"
+                {showPicker && (
+                    <Card
+                        style={{
+                            marginVertical: 15,
+                            padding: 10,
+                            backgroundColor: theme.colors.backgroundSecondary,
+                            borderRadius: 10,
+                        }}
+                    >
+                        <DateTimePicker
+                            value={date}
+                            mode="date"
+                            display={Platform.OS === "ios" ? "spinner" : "default"}
+                            minimumDate={MIN_DATE}
+                            maximumDate={MAX_DATE}
+                            onChange={onChangeDate}
+                            style={{ width: "100%" }}
                         />
-                    ) : (
-                        <View style={styles.videoPlaceholder}>
-                            <Text style={styles.videoText}>
-                                Ce contenu est une vidéo 🎬
-                            </Text>
-                        </View>
-                    )}
 
-                    <Text style={styles.explanation}>
-                        {apod.explanation}
+                        <PrimaryButton
+                            title="Valider la date"
+                            onPress={() => {
+                                fetchAPODData(date);
+                                setShowPicker(false);
+                            }}
+                            style={{ marginTop: 10 }}
+                        />
+                    </Card>
+                )}
+
+                {loading ? (
+                    <Loader />
+                ) : error ? (
+                    <Text style={{ color: theme.colors.error, textAlign: "center", marginTop: 20 }}>
+                        {error}
                     </Text>
-                </View>
-            )}
-        </ScrollView>
+                ) : (
+                    apod && (
+                        <Card style={{ marginTop: 15 }}>
+                            <Title size="md" style={{ textAlign: "center", marginBottom: 10 }}>
+                                {apod.title}
+                            </Title>
+
+                            {apod.media_type === "image" ? (
+                                <Image
+                                    source={{ uri: apod.url }}
+                                    style={{
+                                        width: "100%",
+                                        height: 300,
+                                        borderRadius: 10,
+                                        marginBottom: 10,
+                                    }}
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Text
+                                    style={{
+                                        color: theme.colors.textPrimary,
+                                        textAlign: "center",
+                                        marginBottom: 10,
+                                    }}
+                                >
+                                    Contenu non-image (ex : vidéo YouTube) non affichable.
+                                </Text>
+                            )}
+
+                            <Text
+                                style={{
+                                    color: theme.colors.textPrimary,
+                                    fontSize: 16,
+                                    lineHeight: 22,
+                                }}
+                            >
+                                {apod.explanation}
+                            </Text>
+                        </Card>
+                    )
+                )}
+            </ScrollView>
+        </Screen>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        padding: 20,
-        paddingBottom: 40,
-    },
-    header: {
-        fontSize: 28,
-        fontWeight: "700",
-        textAlign: "center",
-        marginBottom: 20,
-    },
-    dateButton: {
-        backgroundColor: "#1e293b",
-        paddingVertical: 12,
-        borderRadius: 8,
-        marginBottom: 20,
-    },
-    dateButtonText: {
-        color: "white",
-        textAlign: "center",
-        fontWeight: "600",
-        fontSize: 16,
-    },
-    card: {
-        backgroundColor: "#f8fafc",
-        borderRadius: 16,
-        padding: 16,
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 4,
-    },
-    title: {
-        fontSize: 22,
-        fontWeight: "700",
-        marginBottom: 4,
-    },
-    date: {
-        fontSize: 14,
-        color: "#475569",
-        marginBottom: 12,
-    },
-    image: {
-        width: "100%",
-        height: 280,
-        borderRadius: 12,
-        marginBottom: 12,
-    },
-    videoPlaceholder: {
-        height: 200,
-        borderRadius: 12,
-        backgroundColor: "#0f172a",
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 12,
-    },
-    videoText: {
-        color: "white",
-        fontWeight: "600",
-    },
-    explanation: {
-        fontSize: 16,
-        lineHeight: 22,
-        color: "#020617",
-    },
-    error: {
-        color: "#dc2626",
-        textAlign: "center",
-        marginTop: 20,
-        fontSize: 16,
-    },
-});

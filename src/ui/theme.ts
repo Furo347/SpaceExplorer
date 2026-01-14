@@ -1,11 +1,12 @@
 export const theme = {
     colors: {
-        background: "#0B0D17",      // Bleu nuit spatial
-        surface: "#161A2D",         // Cartes
-        primary: "#6C63FF",         // Accent
+        background: "#0B0D17",
+        surface: "#161A2D",
+        primary: "#6C63FF",
         textPrimary: "#FFFFFF",
         textSecondary: "#A1A1B5",
         error: "#FF6B6B",
+        backgroundSecondary: "#FFFFFF",
     },
     spacing: {
         xs: 4,
