@@ -1,37 +1,79 @@
-import React, { useEffect, useState } from "react";
-import {
-    View,
-    Text,
-    ActivityIndicator,
-    FlatList,
-    Image,
-    TouchableOpacity,
-    StyleSheet,
-} from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, Platform, ScrollView } from "react-native";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+
+import Screen from "../ui/components/Screen";
+import Title from "../ui/components/Title";
+import Card from "../ui/components/Card";
+import PrimaryButton from "../ui/components/PrimaryButton";
+import Loader from "../ui/components/Loader";
+
 import { getMarsPhotos, MarsPhoto } from "../services/nasa";
+import { theme } from "../ui/theme";
 
-const ROVERS = ["curiosity", "opportunity", "spirit"] as const;
-type Rover = typeof ROVERS[number];
+type RoverOption = {
+    label: string;
+    value: "curiosity" | "opportunity" | "spirit";
+};
 
-export default function MarsScreen() {
-    const [rover, setRover] = useState<Rover>("curiosity");
-    const [date, setDate] = useState(new Date("2015-06-03"));
+const ROVERS: RoverOption[] = [
+    { label: "Curiosity", value: "curiosity" },
+    { label: "Opportunity", value: "opportunity" },
+    { label: "Spirit", value: "spirit" },
+];
+export default function MarsRoverScreen() {
+    const [rover, setRover] = useState<string>(ROVERS[0].value);
     const [photos, setPhotos] = useState<MarsPhoto[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const [date, setDate] = useState(new Date("2015-09-27"));
     const [showPicker, setShowPicker] = useState(false);
+
+    const getMinDateForRover = (roverName: string) => {
+        switch (roverName.toLowerCase()) {
+            case "curiosity":
+                return new Date("2012-08-06");
+            case "opportunity":
+                return new Date("2004-01-25");
+            case "spirit":
+                return new Date("2004-01-04");
+            default:
+                return new Date("2004-01-04");
+        }
+    };
+
+    const MIN_DATE = getMinDateForRover(rover);
+    const MAX_DATE = new Date();
 
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
-    const fetchPhotos = async () => {
+    const fetchPhotos = async (selectedDate?: Date, selectedRover?: string) => {
         try {
             setLoading(true);
             setError(null);
-            const result = await getMarsPhotos(rover, formatDate(date));
-            setPhotos(result);
-        } catch {
-            setError("Impossible de charger les photos pour cette date.");
+            const currentRover = selectedRover || rover;
+            const currentDate = selectedDate || date;
+
+            // Ensure the date is not before the rover's landing date
+            const minDate = getMinDateForRover(currentRover);
+            if (currentDate < minDate) {
+                setDate(minDate);
+            }
+
+            const data = await getMarsPhotos(
+                currentRover,
+                formatDate(currentDate)
+            );
+
+            if (data.length === 0) {
+                setError("Aucune photo trouvée pour ce rover autour de cette date.");
+            }
+
+            setPhotos(data);
+        } catch (e) {
+            console.log("Mars API error:", e);
+            setError("Impossible de charger les photos du rover.");
             setPhotos([]);
         } finally {
             setLoading(false);
@@ -40,140 +82,105 @@ export default function MarsScreen() {
 
     useEffect(() => {
         fetchPhotos();
-    }, [rover]);
+    }, []);
+
+    const onRoverChange = (selectedRover: RoverOption) => {
+        const newMinDate = getMinDateForRover(selectedRover.value);
+        setRover(selectedRover.value);
+        if (date < newMinDate) {
+            setDate(newMinDate);
+        }
+    };
+
+    const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+        setShowPicker(false); // Hide picker on selection for better UX
+        if (!selectedDate) return;
+
+        const minDate = getMinDateForRover(rover);
+        if (selectedDate < minDate || selectedDate > MAX_DATE) {
+            setError(`Veuillez choisir une date entre ${formatDate(minDate)} et aujourd'hui.`);
+            return;
+        }
+
+        setDate(selectedDate);
+        fetchPhotos(selectedDate, rover);
+    };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Mars Rover Photos</Text>
+        <Screen>
+            <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+                <Title size="lg" style={{ textAlign: "center", marginBottom: 20 }}>
+                    Mars Rover Photos
+                </Title>
 
-            {/* Rover selector */}
-            <View style={styles.roverContainer}>
-                {ROVERS.map((r) => (
-                    <TouchableOpacity
-                        key={r}
-                        style={[
-                            styles.roverButton,
-                            rover === r && styles.roverButtonActive,
-                        ]}
-                        onPress={() => setRover(r)}
-                    >
-                        <Text
-                            style={[
-                                styles.roverText,
-                                rover === r && styles.roverTextActive,
-                            ]}
-                        >
-                            {r.toUpperCase()}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => setShowPicker(true)}
-            >
-                <Text style={styles.dateText}>
-                    Date : {formatDate(date)}
-                </Text>
-            </TouchableOpacity>
-
-            {showPicker && (
-                <DateTimePicker
-                    value={date}
-                    mode="date"
-                    maximumDate={new Date()}
-                    onChange={(_, selectedDate) => {
-                        setShowPicker(false);
-                        if (selectedDate) {
-                            setDate(selectedDate);
-                            fetchPhotos();
-                        }
-                    }}
-                />
-            )}
-
-            {loading ? (
-                <ActivityIndicator size="large" style={{ marginTop: 30 }} />
-            ) : error ? (
-                <Text style={styles.error}>{error}</Text>
-            ) : (
-                <FlatList
-                    data={photos}
-                    keyExtractor={(item) => item.id.toString()}
-                    numColumns={2}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                    renderItem={({ item }) => (
-                        <Image
-                            source={{ uri: item.img_src }}
-                            style={styles.image}
+                {/* Choix du rover */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 15 }}>
+                    {ROVERS.map((r) => (
+                        <PrimaryButton
+                            key={r.value}
+                            title={r.label}
+                            onPress={() => onRoverChange(r)}
+                            style={{
+                                flex: 1,
+                                marginHorizontal: 5,
+                                backgroundColor: r.value === rover ? theme.colors.primary : theme.colors.background,
+                            }}
                         />
-                    )}
-                    ListEmptyComponent={
-                        <Text style={styles.empty}>
-                            Aucune photo disponible pour cette date.
-                        </Text>
-                    }
-                />
-            )}
-        </View>
+                    ))}
+                </View>
+
+                {/* Choix de la date */}
+                <PrimaryButton title="Choisir une date" onPress={() => setShowPicker(true)} />
+
+                {showPicker && (
+                    <Card
+                        style={{
+                            marginVertical: 15,
+                            padding: 10,
+                            backgroundColor: theme.colors.backgroundSecondary,
+                            borderRadius: 10,
+                        }}
+                    >
+                        <DateTimePicker
+                            value={date}
+                            mode="date"
+                            display={Platform.OS === "ios" ? "spinner" : "default"}
+                            minimumDate={MIN_DATE}
+                            maximumDate={MAX_DATE}
+                            onChange={onChangeDate}
+                            style={{ width: "100%" }}
+                        />
+                        {Platform.OS === 'ios' && <PrimaryButton
+                            title="Fermer"
+                            onPress={() => setShowPicker(false)}
+                            style={{ marginTop: 10 }}
+                        />}
+                    </Card>
+                )}
+
+                {/* Affichage des photos */}
+                {loading ? (
+                    <Loader />
+                ) : error ? (
+                    <Text style={{ color: theme.colors.error, textAlign: "center", marginTop: 20 }}>{error}</Text>
+                ) : (
+                    photos.map((photo) => (
+                        <Card key={photo.id} style={{ marginTop: 15 }}>
+                            <Title size="md" style={{ textAlign: "center", marginBottom: 10 }}>
+                                {photo.camera.full_name}
+                            </Title>
+                            <Image
+                                source={{ uri: photo.img_src }}
+                                style={{ width: "100%", height: 250, borderRadius: 10 }}
+                                resizeMode="cover"
+                            />
+                            <Text style={{ color: theme.colors.textPrimary, marginTop: 10, fontSize: 14 }}>
+                                Rover: {photo.rover.name} | Date: {photo.earth_date} | Status: {photo.rover.status}
+                            </Text>
+                        </Card>
+                    ))
+                )}
+            </ScrollView>
+        </Screen>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 16,
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: 16,
-    },
-    roverContainer: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        marginBottom: 12,
-    },
-    roverButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        backgroundColor: "#eee",
-    },
-    roverButtonActive: {
-        backgroundColor: "#000",
-    },
-    roverText: {
-        fontWeight: "600",
-        color: "#000",
-    },
-    roverTextActive: {
-        color: "#fff",
-    },
-    dateButton: {
-        alignSelf: "center",
-        marginBottom: 12,
-    },
-    dateText: {
-        fontSize: 16,
-        textDecorationLine: "underline",
-    },
-    image: {
-        width: "48%",
-        height: 150,
-        margin: "1%",
-        borderRadius: 8,
-    },
-    error: {
-        marginTop: 20,
-        textAlign: "center",
-        color: "red",
-    },
-    empty: {
-        marginTop: 30,
-        textAlign: "center",
-        fontStyle: "italic",
-    },
-});

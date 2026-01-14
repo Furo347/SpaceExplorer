@@ -1,12 +1,17 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import APODScreen from "../screens/APODScreen";
+import MarsRoverScreen from "../screens/MarsScreen";
 import AboutScreen from "../screens/AboutScreen";
+import { theme } from "../ui/theme";
 
 export type RootTabParamList = {
     APOD: undefined;
+    MarsRover: undefined;
     About: undefined;
 };
 
@@ -14,18 +19,34 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export default function AppNavigation() {
     return (
-        <NavigationContainer>
+        <NavigationContainer theme={DefaultTheme}>
             <Tab.Navigator
                 id="main-tabs"
-                screenOptions={{
+                screenOptions={({ route }) => ({
                     headerShown: true,
-                    tabBarActiveTintColor: "#4f8cff",
-                    tabBarStyle: { backgroundColor: "#111" },
-                    headerStyle: { backgroundColor: "#000" },
-                    headerTintColor: "#fff",
-                }}
+                    headerStyle: { backgroundColor: theme.colors.background },
+                    headerTintColor: theme.colors.textPrimary,
+                    tabBarActiveTintColor: theme.colors.primary,
+                    tabBarInactiveTintColor: theme.colors.textSecondary,
+                    tabBarStyle: {
+                        backgroundColor: theme.colors.background,
+                        borderTopWidth: 0,
+                        height: Platform.OS === "ios" ? 90 : 60,
+                        paddingBottom: 10,
+                    },
+                    tabBarIcon: ({ color, size }) => {
+                        let iconName: keyof typeof Ionicons.glyphMap = "home";
+
+                        if (route.name === "APOD") iconName = "image";
+                        else if (route.name === "MarsRover") iconName = "planet";
+                        else if (route.name === "About") iconName = "information-circle";
+
+                        return <Ionicons name={iconName} size={size} color={color} />;
+                    },
+                })}
             >
                 <Tab.Screen name="APOD" component={APODScreen} options={{ title: "Image du jour" }} />
+                <Tab.Screen name="MarsRover" component={MarsRoverScreen} options={{ title: "Rover Mars" }} />
                 <Tab.Screen name="About" component={AboutScreen} options={{ title: "À propos" }} />
             </Tab.Navigator>
         </NavigationContainer>

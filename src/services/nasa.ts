@@ -83,11 +83,24 @@ export async function getMarsPhotos(
     rover: string,
     date: string
 ): Promise<MarsPhoto[]> {
-    const result = await apiGet<MarsResponse>(
-        `/mars-photos/api/v1/rovers/${rover}/photos`,
-        { earth_date: date }
-    );
+    const query = new URLSearchParams({
+        earth_date: date,
+        api_key: NASA_API_KEY,
+    });
+    const url = `https://api.nasa.gov/mars-photos/api/v1/rovers/${rover.toLowerCase()}/photos?${query.toString()}`;
 
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        // For this API, a 404 might just mean no photos on that day.
+        // We'll return an empty array and let the UI handle the message.
+        if (response.status === 404) {
+            return [];
+        }
+        throw new Error(`NASA API error (${response.status})`);
+    }
+
+    const result = await response.json();
     return result.photos;
 }
 
