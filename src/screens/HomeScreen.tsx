@@ -179,7 +179,7 @@ export default function HomeScreen() {
                 {/* Info Box */}
                 <Card
                     style={{
-                        marginTop: 25,
+                        marginTop: theme.spacing.lg,
                         backgroundColor: theme.colors.primary + "15",
                         borderWidth: 1,
                         borderColor: theme.colors.primary + "30",
@@ -191,7 +191,7 @@ export default function HomeScreen() {
                             style={{
                                 color: theme.colors.textSecondary,
                                 fontSize: 13,
-                                marginLeft: 10,
+                                marginLeft: theme.spacing.sm,
                                 flex: 1,
                                 lineHeight: 18,
                             }}

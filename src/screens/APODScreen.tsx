@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Image, Text, Platform, ScrollView, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
 
 import Screen from "../ui/components/Screen";
 import Title from "../ui/components/Title";
@@ -154,21 +155,26 @@ export default function APODScreen() {
                                     style={{
                                         width: "100%",
                                         height: 300,
-                                        borderRadius: 10,
-                                        marginBottom: 10,
+                                        borderRadius: theme.radius.md,
+                                        marginBottom: theme.spacing.sm,
                                     }}
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Text
-                                    style={{
-                                        color: theme.colors.textPrimary,
-                                        textAlign: "center",
-                                        marginBottom: 10,
-                                    }}
-                                >
-                                    Contenu non-image (ex : vidéo YouTube) non affichable.
-                                </Text>
+                                <Card style={{ backgroundColor: theme.colors.primary + "15", marginBottom: theme.spacing.sm }}>
+                                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                        <Ionicons name="videocam" size={24} color={theme.colors.primary} />
+                                        <Text
+                                            style={{
+                                                color: theme.colors.textPrimary,
+                                                marginLeft: theme.spacing.sm,
+                                                flex: 1,
+                                            }}
+                                        >
+                                            Contenu non-image (ex : vidéo YouTube) non affichable.
+                                        </Text>
+                                    </View>
+                                </Card>
                             )}
 
                             <Text

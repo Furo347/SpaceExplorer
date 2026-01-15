@@ -1,5 +1,5 @@
 import React from "react";
-import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, Theme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,6 +12,21 @@ import FavoritesScreen from "../screens/FavoritesScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import AboutScreen from "../screens/AboutScreen";
 import { theme } from "../ui/theme";
+
+// Custom dark theme based on design system
+const SpaceExplorerTheme: Theme = {
+    ...DefaultTheme,
+    dark: true,
+    colors: {
+        ...DefaultTheme.colors,
+        primary: theme.colors.primary,
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        text: theme.colors.textPrimary,
+        border: theme.colors.surface,
+        notification: theme.colors.primary,
+    },
+};
 
 export type RootTabParamList = {
     Home: undefined;
@@ -27,7 +42,7 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export default function AppNavigation() {
     return (
-        <NavigationContainer theme={DefaultTheme}>
+        <NavigationContainer theme={SpaceExplorerTheme}>
             <Tab.Navigator
                 id="main-tabs"
                 screenOptions={({ route }) => ({
@@ -35,15 +50,15 @@ export default function AppNavigation() {
                     headerStyle: { backgroundColor: theme.colors.background },
                     headerTintColor: theme.colors.textPrimary,
                     tabBarActiveTintColor: theme.colors.primary,
-                    tabBarInactiveTintColor: "#8E8E93",
+                    tabBarInactiveTintColor: theme.colors.textSecondary,
                     tabBarShowLabel: false,
                     tabBarStyle: {
-                        backgroundColor: "#FFFFFF",
+                        backgroundColor: theme.colors.surface,
                         borderTopWidth: 1,
-                        borderTopColor: "#E5E5EA",
+                        borderTopColor: theme.colors.background,
                         height: Platform.OS === "ios" ? 85 : 60,
-                        paddingTop: 8,
-                        paddingBottom: Platform.OS === "ios" ? 25 : 8,
+                        paddingTop: theme.spacing.sm,
+                        paddingBottom: Platform.OS === "ios" ? 25 : theme.spacing.sm,
                     },
                     tabBarIcon: ({ color, size }) => {
                         let iconName: keyof typeof Ionicons.glyphMap = "home";

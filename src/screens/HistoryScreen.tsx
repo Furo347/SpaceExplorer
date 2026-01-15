@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { View, Text, Image, ScrollView, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import Screen from "../ui/components/Screen";
 import Title from "../ui/components/Title";
@@ -127,9 +128,9 @@ export default function HistoryScreen() {
     }
 
     return (
-        <Screen>
-            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-                <Title size="lg" style={{ textAlign: "center", marginBottom: 20 }}>
+        <Screen style={{ padding: 0 }}>
+            <ScrollView contentContainerStyle={{ padding: theme.spacing.md, paddingBottom: theme.spacing.xl }}>
+                <Title size="lg" style={{ textAlign: "center", marginBottom: theme.spacing.md }}>
                     Historique
                 </Title>
 
@@ -139,40 +140,42 @@ export default function HistoryScreen() {
                         onPress={handleClearAll}
                         style={{
                             backgroundColor: theme.colors.error,
-                            marginBottom: 10,
+                            marginBottom: theme.spacing.sm,
                         }}
                     />
                 )}
 
                 {history.length === 0 ? (
-                    <View style={{ alignItems: "center", marginTop: 50 }}>
-                        <Text
-                            style={{
-                                color: theme.colors.textSecondary,
-                                fontSize: 16,
-                                textAlign: "center",
-                            }}
-                        >
-                            Aucun historique pour le moment.
-                        </Text>
+                    <Card style={{ marginTop: theme.spacing.lg, alignItems: "center", paddingVertical: theme.spacing.xl }}>
+                        <View style={{
+                            backgroundColor: theme.colors.primary + "20",
+                            borderRadius: 50,
+                            padding: theme.spacing.md,
+                            marginBottom: theme.spacing.md
+                        }}>
+                            <Ionicons name="time-outline" size={48} color={theme.colors.primary} />
+                        </View>
+                        <Title size="md" style={{ marginBottom: theme.spacing.sm, textAlign: "center" }}>
+                            Aucun historique
+                        </Title>
                         <Text
                             style={{
                                 color: theme.colors.textSecondary,
                                 fontSize: 14,
                                 textAlign: "center",
-                                marginTop: 10,
+                                lineHeight: 20,
                             }}
                         >
-                            Les images que vous consultez apparaîtront ici.
+                            Les images que vous consultez{"\n"}apparaîtront ici.
                         </Text>
-                    </View>
+                    </Card>
                 ) : (
                     <>
                         <Text
                             style={{
                                 color: theme.colors.textSecondary,
                                 textAlign: "center",
-                                marginBottom: 10,
+                                marginBottom: theme.spacing.sm,
                             }}
                         >
                             {history.length} image{history.length > 1 ? "s" : ""} consultée{history.length > 1 ? "s" : ""}

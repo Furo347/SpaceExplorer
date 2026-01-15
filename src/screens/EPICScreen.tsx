@@ -205,8 +205,8 @@ export default function EPICScreen() {
                                     style={{
                                         width: "100%",
                                         height: 300,
-                                        borderRadius: 10,
-                                        marginBottom: 10,
+                                        borderRadius: theme.radius.md,
+                                        marginBottom: theme.spacing.sm,
                                     }}
                                     resizeMode="cover"
                                 />
@@ -215,7 +215,7 @@ export default function EPICScreen() {
                                     style={{
                                         color: theme.colors.textPrimary,
                                         fontSize: 14,
-                                        marginBottom: 5,
+                                        marginBottom: theme.spacing.xs,
                                     }}
                                 >
                                     📅 {formatDisplayDate(image.date)}
@@ -225,7 +225,7 @@ export default function EPICScreen() {
                                     style={{
                                         color: theme.colors.textSecondary,
                                         fontSize: 12,
-                                        marginBottom: 5,
+                                        marginBottom: theme.spacing.xs,
                                     }}
                                 >
                                     📍 Lat: {image.centroid_coordinates.lat.toFixed(2)}° | Lon: {image.centroid_coordinates.lon.toFixed(2)}°
@@ -237,7 +237,7 @@ export default function EPICScreen() {
                                             color: theme.colors.textPrimary,
                                             fontSize: 14,
                                             lineHeight: 20,
-                                            marginTop: 5,
+                                            marginTop: theme.spacing.xs,
                                         }}
                                     >
                                         {image.caption}

@@ -210,10 +210,10 @@ export default function MarsRoverScreen() {
                             </View>
                             <Image
                                 source={{ uri: photo.img_src }}
-                                style={{ width: "100%", height: 250, borderRadius: 10 }}
+                                style={{ width: "100%", height: 250, borderRadius: theme.radius.md }}
                                 resizeMode="cover"
                             />
-                            <Text style={{ color: theme.colors.textPrimary, marginTop: 10, fontSize: 14 }}>
+                            <Text style={{ color: theme.colors.textPrimary, marginTop: theme.spacing.sm, fontSize: 14, lineHeight: 20 }}>
                                 Rover: {photo.rover.name} | Date: {photo.earth_date} | Status: {photo.rover.status}
                             </Text>
                         </Card>

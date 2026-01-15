@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { View, Text, Image, ScrollView, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import Screen from "../ui/components/Screen";
 import Title from "../ui/components/Title";
@@ -116,9 +117,9 @@ export default function FavoritesScreen() {
     }
 
     return (
-        <Screen>
-            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-                <Title size="lg" style={{ textAlign: "center", marginBottom: 20 }}>
+        <Screen style={{ padding: 0 }}>
+            <ScrollView contentContainerStyle={{ padding: theme.spacing.md, paddingBottom: theme.spacing.xl }}>
+                <Title size="lg" style={{ textAlign: "center", marginBottom: theme.spacing.md }}>
                     Mes Favoris
                 </Title>
 
@@ -128,40 +129,42 @@ export default function FavoritesScreen() {
                         onPress={handleClearAll}
                         style={{
                             backgroundColor: theme.colors.error,
-                            marginBottom: 10,
+                            marginBottom: theme.spacing.sm,
                         }}
                     />
                 )}
 
                 {favorites.length === 0 ? (
-                    <View style={{ alignItems: "center", marginTop: 50 }}>
-                        <Text
-                            style={{
-                                color: theme.colors.textSecondary,
-                                fontSize: 16,
-                                textAlign: "center",
-                            }}
-                        >
-                            Aucun favori pour le moment.
-                        </Text>
+                    <Card style={{ marginTop: theme.spacing.lg, alignItems: "center", paddingVertical: theme.spacing.xl }}>
+                        <View style={{
+                            backgroundColor: theme.colors.primary + "20",
+                            borderRadius: 50,
+                            padding: theme.spacing.md,
+                            marginBottom: theme.spacing.md
+                        }}>
+                            <Ionicons name="heart-outline" size={48} color={theme.colors.primary} />
+                        </View>
+                        <Title size="md" style={{ marginBottom: theme.spacing.sm, textAlign: "center" }}>
+                            Aucun favori
+                        </Title>
                         <Text
                             style={{
                                 color: theme.colors.textSecondary,
                                 fontSize: 14,
                                 textAlign: "center",
-                                marginTop: 10,
+                                lineHeight: 20,
                             }}
                         >
-                            Appuyez sur le cœur ❤️ sur une image pour l'ajouter à vos favoris.
+                            Appuyez sur le cœur ❤️ sur une image{"\n"}pour l'ajouter à vos favoris.
                         </Text>
-                    </View>
+                    </Card>
                 ) : (
                     <>
                         <Text
                             style={{
                                 color: theme.colors.textSecondary,
                                 textAlign: "center",
-                                marginBottom: 10,
+                                marginBottom: theme.spacing.sm,
                             }}
                         >
                             {favorites.length} favori{favorites.length > 1 ? "s" : ""}

@@ -177,7 +177,7 @@ export default function AboutScreen() {
                         color: theme.colors.textSecondary,
                         fontSize: 12,
                         textAlign: "center",
-                        marginTop: 30,
+                        marginTop: theme.spacing.lg,
                     }}
                 >
                     Données fournies par l'API NASA Open APIs
@@ -187,7 +187,7 @@ export default function AboutScreen() {
                         color: theme.colors.textSecondary,
                         fontSize: 11,
                         textAlign: "center",
-                        marginTop: 5,
+                        marginTop: theme.spacing.xs,
                     }}
                 >
                     © 2024 SpaceExplorer - Tous droits réservés
