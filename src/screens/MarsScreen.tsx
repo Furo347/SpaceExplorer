@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Image, Platform, ScrollView } from "react-native";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { View, Text, Platform, ScrollView } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import Screen from "../ui/components/Screen";
@@ -9,6 +9,7 @@ import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
 import ErrorDisplay from "../ui/components/ErrorDisplay";
+import OptimizedImage from "../ui/components/OptimizedImage";
 
 import { getMarsPhotos, MarsPhoto } from "../services/nasa";
 import { theme } from "../ui/theme";
@@ -36,6 +37,10 @@ export default function MarsRoverScreen() {
     const [date, setDate] = useState(new Date("2015-09-27"));
     const [showPicker, setShowPicker] = useState(false);
 
+    // Refs pour éviter les appels API en double
+    const isFetching = useRef(false);
+    const hasInitialFetch = useRef(false);
+
     const { isFavorite, toggleFavorite } = useFavorites();
     const { addToHistory } = useHistory();
 
@@ -58,6 +63,10 @@ export default function MarsRoverScreen() {
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
     const fetchPhotos = useCallback(async (selectedDate?: Date, selectedRover?: string) => {
+        // Éviter les appels en double
+        if (isFetching.current) return;
+        isFetching.current = true;
+
         try {
             setLoading(true);
             setError(null);
@@ -97,17 +106,20 @@ export default function MarsRoverScreen() {
 
             setPhotos(data);
         } catch (e) {
-            console.log("Mars API error:", e);
             setError(createApiError(e, "mars"));
             setPhotos([]);
         } finally {
             setLoading(false);
+            isFetching.current = false;
         }
     }, [rover, date, addToHistory]);
 
     useEffect(() => {
+        // Éviter le double fetch au montage (React StrictMode)
+        if (hasInitialFetch.current) return;
+        hasInitialFetch.current = true;
         fetchPhotos();
-    }, []);
+    }, [fetchPhotos]);
 
     const onRoverChange = (selectedRover: RoverOption) => {
         const newMinDate = getMinDateForRover(selectedRover.value);
@@ -153,17 +165,22 @@ export default function MarsRoverScreen() {
                             key={r.value}
                             title={r.label}
                             onPress={() => onRoverChange(r)}
+                            disabled={loading}
                             style={{
                                 flex: 1,
                                 marginHorizontal: 5,
-                                backgroundColor: r.value === rover ? theme.colors.primary : theme.colors.background,
+                                backgroundColor: r.value === rover ? theme.colors.primary : theme.colors.surface,
                             }}
                         />
                     ))}
                 </View>
 
                 {/* Choix de la date */}
-                <PrimaryButton title="Choisir une date" onPress={() => setShowPicker(true)} />
+                <PrimaryButton
+                    title="Choisir une date"
+                    onPress={() => setShowPicker(true)}
+                    disabled={loading}
+                />
 
                 {showPicker && (
                     <Card
@@ -220,8 +237,8 @@ export default function MarsRoverScreen() {
                                     size={28}
                                 />
                             </View>
-                            <Image
-                                source={{ uri: photo.img_src }}
+                            <OptimizedImage
+                                uri={photo.img_src}
                                 style={{ width: "100%", height: 250, borderRadius: theme.radius.md }}
                                 resizeMode="cover"
                             />

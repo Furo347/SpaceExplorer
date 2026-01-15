@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { View, Text, Image, ScrollView, Alert } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -9,6 +9,7 @@ import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
+import OptimizedImage from "../ui/components/OptimizedImage";
 
 import { useFavorites } from "../hooks/useFavorites";
 import { theme } from "../ui/theme";
@@ -72,8 +73,8 @@ export default function FavoritesScreen() {
                 />
             </View>
 
-            <Image
-                source={{ uri: item.imageUrl }}
+            <OptimizedImage
+                uri={item.imageUrl}
                 style={{
                     width: "100%",
                     height: 200,

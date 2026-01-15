@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Image, Text, Platform, ScrollView, View } from "react-native";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Text, Platform, ScrollView, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import Screen from "../ui/components/Screen";
@@ -9,6 +9,7 @@ import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
 import ErrorDisplay from "../ui/components/ErrorDisplay";
+import OptimizedImage from "../ui/components/OptimizedImage";
 
 import { getEPICImages, getEPICImageUrl, EPICImage } from "../services/nasa";
 import { theme } from "../ui/theme";
@@ -24,6 +25,10 @@ export default function EPICScreen() {
 
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
+
+    // Refs pour éviter les appels API en double
+    const isFetching = useRef(false);
+    const hasInitialFetch = useRef(false);
 
     const { isFavorite, toggleFavorite } = useFavorites();
     const { addToHistory } = useHistory();
@@ -46,6 +51,10 @@ export default function EPICScreen() {
     };
 
     const fetchEPICData = useCallback(async (selectedDate?: Date) => {
+        // Éviter les appels en double
+        if (isFetching.current) return;
+        isFetching.current = true;
+
         try {
             setLoading(true);
             setError(null);
@@ -80,16 +89,21 @@ export default function EPICScreen() {
             setImages([]);
         } finally {
             setLoading(false);
+            isFetching.current = false;
         }
     }, [date, addToHistory]);
 
     useEffect(() => {
+        // Éviter le double fetch au montage (React StrictMode)
+        if (hasInitialFetch.current) return;
+        hasInitialFetch.current = true;
+
         // Load images for yesterday by default (today's images may not be available yet)
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 2);
         setDate(yesterday);
         fetchEPICData(yesterday);
-    }, []);
+    }, [fetchEPICData]);
 
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
         if (!selectedDate) return;
@@ -126,7 +140,11 @@ export default function EPICScreen() {
                     Images de la Terre depuis le satellite DSCOVR
                 </Text>
 
-                <PrimaryButton title="Choisir une date" onPress={() => setShowPicker(true)} />
+                <PrimaryButton
+                    title="Choisir une date"
+                    onPress={() => setShowPicker(true)}
+                    disabled={loading}
+                />
 
                 {showPicker && (
                     <Card
@@ -153,6 +171,7 @@ export default function EPICScreen() {
                                 fetchEPICData(date);
                                 setShowPicker(false);
                             }}
+                            loading={loading}
                             style={{ marginTop: 10 }}
                         />
                     </Card>
@@ -210,8 +229,8 @@ export default function EPICScreen() {
                                     />
                                 </View>
 
-                                <Image
-                                    source={{ uri: getEPICImageUrl(formatDate(date), image.image) }}
+                                <OptimizedImage
+                                    uri={getEPICImageUrl(formatDate(date), image.image)}
                                     style={{
                                         width: "100%",
                                         height: 300,

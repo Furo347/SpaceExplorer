@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Image, Text, Platform, ScrollView, View } from "react-native";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Text, Platform, ScrollView, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -10,6 +10,7 @@ import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
 import ErrorDisplay from "../ui/components/ErrorDisplay";
+import OptimizedImage from "../ui/components/OptimizedImage";
 
 import { getAPOD } from "../services/nasa";
 import { theme } from "../ui/theme";
@@ -26,6 +27,10 @@ export default function APODScreen() {
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
 
+    // Ref pour éviter les appels API en double
+    const isFetching = useRef(false);
+    const hasInitialFetch = useRef(false);
+
     const { isFavorite, toggleFavorite } = useFavorites();
     const { addToHistory } = useHistory();
 
@@ -35,6 +40,10 @@ export default function APODScreen() {
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
     const fetchAPODData = useCallback(async (selectedDate?: Date) => {
+        // Éviter les appels en double
+        if (isFetching.current) return;
+        isFetching.current = true;
+
         try {
             setLoading(true);
             setError(null);
@@ -69,12 +78,16 @@ export default function APODScreen() {
             setApod(null);
         } finally {
             setLoading(false);
+            isFetching.current = false;
         }
     }, [addToHistory]);
 
     useEffect(() => {
+        // Éviter le double fetch au montage (React StrictMode)
+        if (hasInitialFetch.current) return;
+        hasInitialFetch.current = true;
         fetchAPODData();
-    }, []);
+    }, [fetchAPODData]);
 
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
         if (!selectedDate) return;
@@ -100,7 +113,11 @@ export default function APODScreen() {
                     NASA APOD
                 </Title>
 
-                <PrimaryButton title="Choisir une date" onPress={() => setShowPicker(true)} />
+                <PrimaryButton
+                    title="Choisir une date"
+                    onPress={() => setShowPicker(true)}
+                    disabled={loading}
+                />
 
                 {showPicker && (
                     <Card
@@ -127,6 +144,7 @@ export default function APODScreen() {
                                 fetchAPODData(date);
                                 setShowPicker(false);
                             }}
+                            loading={loading}
                             style={{ marginTop: 10 }}
                         />
                     </Card>
@@ -164,8 +182,8 @@ export default function APODScreen() {
                             </View>
 
                             {apod.media_type === "image" ? (
-                                <Image
-                                    source={{ uri: apod.url }}
+                                <OptimizedImage
+                                    uri={apod.url}
                                     style={{
                                         width: "100%",
                                         height: 300,
