@@ -281,6 +281,8 @@ export default function MarsRoverScreen() {
                             maximumDate={MAX_DATE}
                             onChange={onChangeDate}
                             style={{ width: "100%" }}
+                            textColor={theme.colors.textPrimary}
+                            themeVariant="dark"
                         />
                         {Platform.OS === 'ios' && (
                             <PrimaryButton
@@ -425,7 +427,7 @@ const styles = StyleSheet.create({
     pickerCard: {
         marginBottom: theme.spacing.md,
         padding: theme.spacing.sm,
-        backgroundColor: theme.colors.backgroundSecondary,
+        backgroundColor: theme.colors.surface,
     },
 });
 

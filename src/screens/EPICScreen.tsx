@@ -81,7 +81,7 @@ export default function EPICScreen() {
                         }
                     } catch (fallbackError) {
                         console.log("[EPIC] Fallback also failed:", fallbackError);
-                        throw e; // Re-throw original error
+                        throw e;
                     }
                 } else {
                     throw e;
@@ -174,7 +174,7 @@ export default function EPICScreen() {
                         style={{
                             marginVertical: 15,
                             padding: 10,
-                            backgroundColor: theme.colors.backgroundSecondary,
+                            backgroundColor: theme.colors.surface,
                             borderRadius: 10,
                         }}
                     >
@@ -186,6 +186,8 @@ export default function EPICScreen() {
                             maximumDate={MAX_DATE}
                             onChange={onChangeDate}
                             style={{ width: "100%" }}
+                            textColor={theme.colors.textPrimary}
+                            themeVariant="dark"
                         />
 
                         <PrimaryButton

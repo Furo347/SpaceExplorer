@@ -127,7 +127,7 @@ export default function APODScreen() {
                         style={{
                             marginVertical: 15,
                             padding: 10,
-                            backgroundColor: theme.colors.backgroundSecondary,
+                            backgroundColor: theme.colors.surface,
                             borderRadius: 10,
                         }}
                     >
@@ -139,6 +139,8 @@ export default function APODScreen() {
                             maximumDate={MAX_DATE}
                             onChange={onChangeDate}
                             style={{ width: "100%" }}
+                            textColor={theme.colors.textPrimary}
+                            themeVariant="dark"
                         />
 
                         <PrimaryButton
