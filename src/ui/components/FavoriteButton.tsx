@@ -10,7 +10,6 @@ type FavoriteButtonProps = {
     style?: ViewStyle;
 };
 
-// Couleur dorée pour l'étoile favorite (visible en dark mode)
 const STAR_COLOR = "#FFD700";
 
 export default function FavoriteButton({

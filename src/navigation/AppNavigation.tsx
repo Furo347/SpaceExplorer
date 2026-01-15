@@ -13,7 +13,6 @@ import HistoryScreen from "../screens/HistoryScreen";
 import AboutScreen from "../screens/AboutScreen";
 import { theme } from "../ui/theme";
 
-// Custom dark theme based on design system
 const SpaceExplorerTheme: Theme = {
     ...DefaultTheme,
     dark: true,

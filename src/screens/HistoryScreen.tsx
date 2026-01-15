@@ -26,7 +26,6 @@ export default function HistoryScreen() {
     const { history, loading, clearHistory, refreshHistory } = useHistory();
     const { isFavorite, toggleFavorite, refreshFavorites } = useFavorites();
 
-    // Refresh data when screen is focused
     useFocusEffect(
         useCallback(() => {
             refreshHistory();

@@ -28,14 +28,12 @@ export default function APODScreen() {
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
 
-    // Ref pour éviter les appels API en double
     const isFetching = useRef(false);
     const hasInitialFetch = useRef(false);
 
     const { isFavorite, toggleFavorite, refreshFavorites } = useFavorites();
     const { addToHistory } = useHistory();
 
-    // Rafraîchir les favoris quand l'écran devient visible
     useFocusEffect(
         useCallback(() => {
             refreshFavorites();
@@ -48,7 +46,6 @@ export default function APODScreen() {
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
     const fetchAPODData = useCallback(async (selectedDate?: Date) => {
-        // Éviter les appels en double
         if (isFetching.current) return;
         isFetching.current = true;
 
@@ -68,7 +65,6 @@ export default function APODScreen() {
 
             setApod(data);
 
-            // Add to history
             if (data && data.media_type === "image") {
                 const savedImage: SavedImage = {
                     id: `apod-${data.date}`,
@@ -91,7 +87,6 @@ export default function APODScreen() {
     }, [addToHistory]);
 
     useEffect(() => {
-        // Éviter le double fetch au montage (React StrictMode)
         if (hasInitialFetch.current) return;
         hasInitialFetch.current = true;
         fetchAPODData();

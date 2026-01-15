@@ -27,21 +27,18 @@ export default function EPICScreen() {
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
 
-    // Refs pour éviter les appels API en double
     const isFetching = useRef(false);
     const hasInitialFetch = useRef(false);
 
     const { isFavorite, toggleFavorite, refreshFavorites } = useFavorites();
     const { addToHistory } = useHistory();
 
-    // Rafraîchir les favoris quand l'écran devient visible
     useFocusEffect(
         useCallback(() => {
             refreshFavorites();
         }, [refreshFavorites])
     );
 
-    // EPIC data is available from 2015-06-13
     const MIN_DATE = new Date("2015-06-13");
     const MAX_DATE = new Date();
 
@@ -59,7 +56,6 @@ export default function EPICScreen() {
     };
 
     const fetchEPICData = useCallback(async (selectedDate?: Date, isInitialLoad = false) => {
-        // Éviter les appels en double
         if (isFetching.current) return;
         isFetching.current = true;
 
@@ -73,7 +69,6 @@ export default function EPICScreen() {
             try {
                 data = await getEPICImages(formatDate(dateToFetch));
             } catch (e) {
-                // Si c'est le chargement initial et qu'on a une erreur, essayer de trouver une date valide
                 if (isInitialLoad) {
                     console.log("[EPIC] Initial fetch failed, trying to find available date...");
                     try {
@@ -99,7 +94,6 @@ export default function EPICScreen() {
                 return;
             }
 
-            // Add images to history (limit to first 5 to avoid spam)
             data.slice(0, 5).forEach((image) => {
                 const imageUrl = getEPICImageUrl(formatDate(dateToFetch), image.image);
                 const savedImage: SavedImage = {
@@ -125,15 +119,13 @@ export default function EPICScreen() {
     }, [date, addToHistory]);
 
     useEffect(() => {
-        // Éviter le double fetch au montage (React StrictMode)
         if (hasInitialFetch.current) return;
         hasInitialFetch.current = true;
 
-        // Essayer avec une date de 3 jours en arrière (les images EPIC ont un délai)
         const pastDate = new Date();
         pastDate.setDate(pastDate.getDate() - 3);
         setDate(pastDate);
-        fetchEPICData(pastDate, true); // isInitialLoad = true
+        fetchEPICData(pastDate, true);
     }, [fetchEPICData]);
 
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {

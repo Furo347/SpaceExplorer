@@ -23,9 +23,7 @@ import { ApiError, createApiError, createEmptyDataError } from "../types/errors"
 type RoverOption = {
     label: string;
     value: "curiosity" | "opportunity" | "spirit";
-    // Date connue avec des photos pour ce rover
     defaultDate: string;
-    // Date de fin de mission (null si toujours actif)
     endDate: string | null;
 };
 
@@ -33,19 +31,19 @@ const ROVERS: RoverOption[] = [
     {
         label: "Curiosity",
         value: "curiosity",
-        defaultDate: "2024-01-15", // Curiosity est toujours actif
+        defaultDate: "2024-01-15",
         endDate: null
     },
     {
         label: "Opportunity",
         value: "opportunity",
-        defaultDate: "2018-06-10", // Dernière période active d'Opportunity
+        defaultDate: "2018-06-10",
         endDate: "2019-02-13"
     },
     {
         label: "Spirit",
         value: "spirit",
-        defaultDate: "2010-01-15", // Période active de Spirit
+        defaultDate: "2010-01-15",
         endDate: "2010-03-22"
     },
 ];
@@ -56,18 +54,15 @@ export default function MarsRoverScreen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<ApiError | null>(null);
 
-    // Utiliser la date par défaut du premier rover (Curiosity)
     const [date, setDate] = useState(new Date(ROVERS[0].defaultDate));
     const [showPicker, setShowPicker] = useState(false);
 
-    // Refs pour éviter les appels API en double
     const isFetching = useRef(false);
     const hasInitialFetch = useRef(false);
 
     const { isFavorite, toggleFavorite, refreshFavorites } = useFavorites();
     const { addToHistory } = useHistory();
 
-    // Rafraîchir les favoris quand l'écran devient visible
     useFocusEffect(
         useCallback(() => {
             refreshFavorites();
@@ -102,7 +97,6 @@ export default function MarsRoverScreen() {
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
     const fetchPhotos = useCallback(async (selectedDate?: Date, selectedRover?: string) => {
-        // Éviter les appels en double
         if (isFetching.current) return;
         isFetching.current = true;
 
@@ -112,7 +106,6 @@ export default function MarsRoverScreen() {
             const currentRover = selectedRover || rover;
             const currentDate = selectedDate || date;
 
-            // Ensure the date is within the rover's active period
             const minDate = getMinDateForRover(currentRover);
             const maxDate = getMaxDateForRover(currentRover);
 
@@ -133,7 +126,6 @@ export default function MarsRoverScreen() {
             );
 
             if (data.length === 0) {
-                // Si pas de photos, afficher un message plus informatif
                 const roverConfig = getRoverConfig(currentRover);
                 setError({
                     type: "empty",
@@ -148,7 +140,6 @@ export default function MarsRoverScreen() {
 
             console.log(`[Mars] Received ${data.length} photos`);
 
-            // Add photos to history (limit to first 10 to avoid spam)
             data.slice(0, 10).forEach((photo) => {
                 const savedImage: SavedImage = {
                     id: `mars-${photo.id}`,
@@ -174,7 +165,6 @@ export default function MarsRoverScreen() {
     }, [rover, date, addToHistory]);
 
     useEffect(() => {
-        // Éviter le double fetch au montage (React StrictMode)
         if (hasInitialFetch.current) return;
         hasInitialFetch.current = true;
         fetchPhotos();
@@ -182,15 +172,13 @@ export default function MarsRoverScreen() {
 
     const onRoverChange = (selectedRover: RoverOption) => {
         setRover(selectedRover.value);
-        // Utiliser la date par défaut du rover sélectionné
         const newDate = new Date(selectedRover.defaultDate);
         setDate(newDate);
-        // Fetch immédiatement avec le nouveau rover et sa date par défaut
         fetchPhotos(newDate, selectedRover.value);
     };
 
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-        setShowPicker(false); // Hide picker on selection for better UX
+        setShowPicker(false);
         if (!selectedDate) return;
 
         const minDate = getMinDateForRover(rover);

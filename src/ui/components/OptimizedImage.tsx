@@ -9,9 +9,6 @@ type OptimizedImageProps = {
     resizeMode?: "cover" | "contain" | "stretch" | "center";
 };
 
-/**
- * Composant Image optimisé avec placeholder de chargement
- */
 export default function OptimizedImage({ uri, style, resizeMode = "cover" }: OptimizedImageProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);

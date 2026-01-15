@@ -28,7 +28,6 @@ const ERROR_COLORS: Record<ApiErrorType, string> = {
 };
 
 export default function ErrorDisplay({ error, onRetry, style }: ErrorDisplayProps) {
-    // Support pour les erreurs simples (string) pour la rétrocompatibilité
     const apiError: ApiError = typeof error === "string"
         ? { type: "unknown", message: error, canRetry: true }
         : error;

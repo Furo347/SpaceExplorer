@@ -59,14 +59,8 @@ export type EPICImage = {
 
 const NASA_BASE_URL = "https://api.nasa.gov";
 
-/**
- * Timeout pour les requêtes API (en ms)
- */
 const API_TIMEOUT = 15000;
 
-/**
- * Mode debug - mettre à false en production
- */
 const DEBUG_MODE = __DEV__ ?? true;
 
 function debugLog(message: string, data?: any) {
@@ -75,9 +69,6 @@ function debugLog(message: string, data?: any) {
     }
 }
 
-/**
- * Effectue une requête avec timeout
- */
 async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -100,9 +91,6 @@ async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Pro
     }
 }
 
-/**
- * Gère la réponse HTTP et renvoie une erreur appropriée si nécessaire
- */
 async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
         const errorText = await response.text().catch(() => "Unknown error");
@@ -153,7 +141,6 @@ export async function getMarsPhotos(
         throw new ApiHttpError(400, `Rover invalide: ${rover}. Rovers valides: ${validRovers.join(", ")}`);
     }
 
-    // Valider le format de la date
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
         debugLog(`Invalid date format: ${date}`);
@@ -174,7 +161,6 @@ export async function getMarsPhotos(
 
         debugLog(`Mars photos received: ${result.photos?.length ?? 0} photos`);
 
-        // L'API peut retourner un objet vide ou photos undefined
         if (!result.photos) {
             debugLog("No photos array in response");
             return [];
@@ -211,7 +197,6 @@ export async function searchImages(
 }
 
 export async function getEPICImages(date: string): Promise<EPICImage[]> {
-    // Valider le format de la date
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
         debugLog(`Invalid date format: ${date}`);
@@ -228,7 +213,6 @@ export async function getEPICImages(date: string): Promise<EPICImage[]> {
 
         debugLog(`EPIC images received: ${data?.length ?? 0} images`);
 
-        // L'API peut retourner un tableau vide ou null
         if (!Array.isArray(data)) {
             debugLog("EPIC response is not an array:", typeof data);
             return [];
@@ -241,10 +225,6 @@ export async function getEPICImages(date: string): Promise<EPICImage[]> {
     }
 }
 
-/**
- * Récupère les dates disponibles pour EPIC
- * Utile pour trouver la dernière date avec des images
- */
 export async function getEPICAvailableDates(): Promise<string[]> {
     debugLog("Fetching EPIC available dates");
 
@@ -265,7 +245,6 @@ export async function getEPICAvailableDates(): Promise<string[]> {
 }
 
 export function getEPICImageUrl(date: string, imageName: string): string {
-    // Date format: YYYY-MM-DD -> YYYY/MM/DD for the URL
     const [year, month, day] = date.split("-");
     return `https://api.nasa.gov/EPIC/archive/natural/${year}/${month}/${day}/png/${imageName}.png?api_key=${NASA_API_KEY}`;
 }

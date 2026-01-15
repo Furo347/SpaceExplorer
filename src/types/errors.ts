@@ -1,7 +1,3 @@
-/**
- * Types d'erreurs API centralisés
- */
-
 export type ApiErrorType = "network" | "api" | "empty" | "unknown";
 
 export interface ApiError {
@@ -11,9 +7,6 @@ export interface ApiError {
     canRetry: boolean;
 }
 
-/**
- * Messages d'erreur UX-friendly
- */
 export const ERROR_MESSAGES: Record<ApiErrorType, string> = {
     network: "Connexion impossible. Vérifiez votre connexion internet.",
     api: "Service temporairement indisponible. Veuillez réessayer plus tard.",
@@ -21,20 +14,13 @@ export const ERROR_MESSAGES: Record<ApiErrorType, string> = {
     unknown: "Une erreur inattendue s'est produite.",
 };
 
-/**
- * Messages d'erreur contextuels
- */
 export const CONTEXTUAL_EMPTY_MESSAGES = {
     apod: "Aucune image astronomique disponible pour cette date.",
     mars: "Aucune photo trouvée pour ce rover à cette date.",
     epic: "Aucune image de la Terre disponible pour cette date. Essayez une date antérieure.",
 };
 
-/**
- * Crée une erreur API structurée à partir d'une exception
- */
 export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL_EMPTY_MESSAGES): ApiError {
-    // Erreur réseau (fetch échoué, pas de connexion)
     if (error instanceof TypeError && error.message.includes("Network")) {
         return {
             type: "network",
@@ -43,7 +29,6 @@ export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL
         };
     }
 
-    // Erreur réseau générique (fetch failed)
     if (error instanceof TypeError || (error instanceof Error && error.message.toLowerCase().includes("fetch"))) {
         return {
             type: "network",
@@ -52,11 +37,9 @@ export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL
         };
     }
 
-    // Erreur API avec status code
     if (error instanceof ApiHttpError) {
         const statusCode = error.statusCode;
 
-        // Erreurs 4xx côté client
         if (statusCode >= 400 && statusCode < 500) {
             if (statusCode === 404) {
                 return {
@@ -82,7 +65,6 @@ export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL
             };
         }
 
-        // Erreurs 5xx côté serveur
         if (statusCode >= 500) {
             return {
                 type: "api",
@@ -93,9 +75,7 @@ export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL
         }
     }
 
-    // Erreur générique avec message
     if (error instanceof Error) {
-        // Check if it's an API error message
         if (error.message.includes("API error")) {
             return {
                 type: "api",
@@ -105,7 +85,6 @@ export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL
         }
     }
 
-    // Erreur inconnue
     return {
         type: "unknown",
         message: ERROR_MESSAGES.unknown,
@@ -113,9 +92,6 @@ export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL
     };
 }
 
-/**
- * Classe d'erreur HTTP personnalisée pour les erreurs API
- */
 export class ApiHttpError extends Error {
     constructor(
         public statusCode: number,
@@ -126,9 +102,6 @@ export class ApiHttpError extends Error {
     }
 }
 
-/**
- * Crée une erreur pour données vides
- */
 export function createEmptyDataError(context?: keyof typeof CONTEXTUAL_EMPTY_MESSAGES): ApiError {
     return {
         type: "empty",

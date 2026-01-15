@@ -21,7 +21,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Load favorites from AsyncStorage
     const loadFavorites = useCallback(async () => {
         try {
             const stored = await AsyncStorage.getItem(FAVORITES_KEY);
@@ -41,7 +40,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         loadFavorites();
     }, [loadFavorites]);
 
-    // Save favorites to AsyncStorage
     const saveFavorites = async (newFavorites: FavoriteItem[]) => {
         try {
             await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
@@ -51,7 +49,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // Check if an image is in favorites
     const isFavorite = useCallback(
         (imageId: string): boolean => {
             return favorites.some((fav) => fav.id === imageId);
@@ -59,7 +56,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         [favorites]
     );
 
-    // Add image to favorites
     const addFavorite = useCallback(async (image: SavedImage) => {
         if (favorites.some((fav) => fav.id === image.id)) return;
 
@@ -72,13 +68,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         await saveFavorites(newFavorites);
     }, [favorites]);
 
-    // Remove image from favorites
     const removeFavorite = useCallback(async (imageId: string) => {
         const newFavorites = favorites.filter((fav) => fav.id !== imageId);
         await saveFavorites(newFavorites);
     }, [favorites]);
 
-    // Toggle favorite status
     const toggleFavorite = useCallback(async (image: SavedImage) => {
         if (favorites.some((fav) => fav.id === image.id)) {
             const newFavorites = favorites.filter((fav) => fav.id !== image.id);
@@ -93,7 +87,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         }
     }, [favorites]);
 
-    // Clear all favorites
     const clearFavorites = useCallback(async () => {
         try {
             await AsyncStorage.removeItem(FAVORITES_KEY);

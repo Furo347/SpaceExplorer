@@ -3,27 +3,18 @@ import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "../theme";
 
-/**
- * Composant de splash screen animé avec thème spatial
- * Affiché pendant le chargement initial de l'application
- */
 export default function SplashScreenView() {
-    // Animation de rotation pour la fusée
     const rotateAnim = useRef(new Animated.Value(0)).current;
-    // Animation de pulsation pour le texte
     const pulseAnim = useRef(new Animated.Value(1)).current;
-    // Animation de fondu
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        // Animation d'apparition
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 400,
             useNativeDriver: true,
         }).start();
 
-        // Animation de rotation continue pour la fusée
         Animated.loop(
             Animated.sequence([
                 Animated.timing(rotateAnim, {
@@ -41,7 +32,6 @@ export default function SplashScreenView() {
             ])
         ).start();
 
-        // Animation de pulsation pour le texte "Chargement"
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
@@ -58,7 +48,6 @@ export default function SplashScreenView() {
         ).start();
     }, [fadeAnim, rotateAnim, pulseAnim]);
 
-    // Interpolation pour la rotation
     const rotate = rotateAnim.interpolate({
         inputRange: [0, 1],
         outputRange: ["-10deg", "10deg"],

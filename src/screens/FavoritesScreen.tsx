@@ -24,7 +24,6 @@ const SOURCE_LABELS: Record<string, string> = {
 export default function FavoritesScreen() {
     const { favorites, loading, removeFavorite, clearFavorites, refreshFavorites } = useFavorites();
 
-    // Refresh favorites when screen is focused
     useFocusEffect(
         useCallback(() => {
             refreshFavorites();

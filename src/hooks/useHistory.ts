@@ -3,13 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { HistoryItem, SavedImage } from "../types/storage";
 
 const HISTORY_KEY = "@spaceexplorer_history";
-const MAX_HISTORY_ITEMS = 100; // Limit history size
+const MAX_HISTORY_ITEMS = 100;
 
 export function useHistory() {
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Load history from AsyncStorage
     const loadHistory = useCallback(async () => {
         try {
             const stored = await AsyncStorage.getItem(HISTORY_KEY);
@@ -27,7 +26,6 @@ export function useHistory() {
         loadHistory();
     }, [loadHistory]);
 
-    // Save history to AsyncStorage
     const saveHistory = async (newHistory: HistoryItem[]) => {
         try {
             await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
@@ -37,9 +35,7 @@ export function useHistory() {
         }
     };
 
-    // Add image to history
     const addToHistory = async (image: SavedImage) => {
-        // Remove existing entry if present (to move it to top)
         const filteredHistory = history.filter((item) => item.id !== image.id);
 
         const newHistoryItem: HistoryItem = {
@@ -47,18 +43,15 @@ export function useHistory() {
             viewedAt: new Date().toISOString(),
         };
 
-        // Add new item at the beginning, limit total size
         const newHistory = [newHistoryItem, ...filteredHistory].slice(0, MAX_HISTORY_ITEMS);
         await saveHistory(newHistory);
     };
 
-    // Remove item from history
     const removeFromHistory = async (imageId: string) => {
         const newHistory = history.filter((item) => item.id !== imageId);
         await saveHistory(newHistory);
     };
 
-    // Clear all history
     const clearHistory = async () => {
         try {
             await AsyncStorage.removeItem(HISTORY_KEY);
@@ -68,7 +61,6 @@ export function useHistory() {
         }
     };
 
-    // Check if image is in history
     const isInHistory = useCallback(
         (imageId: string): boolean => {
             return history.some((item) => item.id === imageId);
