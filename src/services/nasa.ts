@@ -65,19 +65,35 @@ const NASA_BASE_URL = "https://api.nasa.gov";
 const API_TIMEOUT = 15000;
 
 /**
+ * Mode debug - mettre à false en production
+ */
+const DEBUG_MODE = __DEV__ ?? true;
+
+function debugLog(message: string, data?: any) {
+    if (DEBUG_MODE) {
+        console.log(`[NASA API] ${message}`, data !== undefined ? data : "");
+    }
+}
+
+/**
  * Effectue une requête avec timeout
  */
 async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+    debugLog("Fetching URL:", url.replace(NASA_API_KEY, "***API_KEY***"));
+
     try {
         const response = await fetch(url, { signal: controller.signal });
+        debugLog(`Response status: ${response.status} ${response.statusText}`);
         return response;
     } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
+            debugLog("Request timeout");
             throw new ApiHttpError(408, "La requête a pris trop de temps. Veuillez réessayer.");
         }
+        debugLog("Fetch error:", error);
         throw error;
     } finally {
         clearTimeout(timeoutId);
@@ -89,9 +105,13 @@ async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Pro
  */
 async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-        throw new ApiHttpError(response.status, `NASA API error (${response.status})`);
+        const errorText = await response.text().catch(() => "Unknown error");
+        debugLog(`API Error (${response.status}):`, errorText);
+        throw new ApiHttpError(response.status, `NASA API error (${response.status}): ${errorText}`);
     }
-    return (await response.json()) as T;
+    const data = await response.json();
+    debugLog("Response data received:", Array.isArray(data) ? `Array[${data.length}]` : typeof data);
+    return data as T;
 }
 
 async function apiGet<T>(
@@ -124,15 +144,47 @@ export async function getMarsPhotos(
     rover: string,
     date: string
 ): Promise<MarsPhoto[]> {
+    // Valider le nom du rover
+    const validRovers = ["curiosity", "opportunity", "spirit"];
+    const normalizedRover = rover.toLowerCase();
+
+    if (!validRovers.includes(normalizedRover)) {
+        debugLog(`Invalid rover name: ${rover}`);
+        throw new ApiHttpError(400, `Rover invalide: ${rover}. Rovers valides: ${validRovers.join(", ")}`);
+    }
+
+    // Valider le format de la date
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+        debugLog(`Invalid date format: ${date}`);
+        throw new ApiHttpError(400, `Format de date invalide: ${date}. Format attendu: YYYY-MM-DD`);
+    }
+
+    debugLog(`Fetching Mars photos for rover: ${normalizedRover}, date: ${date}`);
+
     const query = new URLSearchParams({
         earth_date: date,
         api_key: NASA_API_KEY,
     });
-    const url = `https://api.nasa.gov/mars-photos/api/v1/rovers/${rover.toLowerCase()}/photos?${query.toString()}`;
+    const url = `https://api.nasa.gov/mars-photos/api/v1/rovers/${normalizedRover}/photos?${query.toString()}`;
 
-    const response = await fetchWithTimeout(url);
-    const result = await handleResponse<MarsResponse>(response);
-    return result.photos;
+    try {
+        const response = await fetchWithTimeout(url);
+        const result = await handleResponse<MarsResponse>(response);
+
+        debugLog(`Mars photos received: ${result.photos?.length ?? 0} photos`);
+
+        // L'API peut retourner un objet vide ou photos undefined
+        if (!result.photos) {
+            debugLog("No photos array in response");
+            return [];
+        }
+
+        return result.photos;
+    } catch (error) {
+        debugLog("Mars API error:", error);
+        throw error;
+    }
 }
 
 export async function searchImages(
@@ -159,9 +211,57 @@ export async function searchImages(
 }
 
 export async function getEPICImages(date: string): Promise<EPICImage[]> {
+    // Valider le format de la date
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+        debugLog(`Invalid date format: ${date}`);
+        throw new ApiHttpError(400, `Format de date invalide: ${date}. Format attendu: YYYY-MM-DD`);
+    }
+
+    debugLog(`Fetching EPIC images for date: ${date}`);
+
     const url = `https://api.nasa.gov/EPIC/api/natural/date/${date}?api_key=${NASA_API_KEY}`;
-    const response = await fetchWithTimeout(url);
-    return handleResponse<EPICImage[]>(response);
+
+    try {
+        const response = await fetchWithTimeout(url);
+        const data = await handleResponse<EPICImage[]>(response);
+
+        debugLog(`EPIC images received: ${data?.length ?? 0} images`);
+
+        // L'API peut retourner un tableau vide ou null
+        if (!Array.isArray(data)) {
+            debugLog("EPIC response is not an array:", typeof data);
+            return [];
+        }
+
+        return data;
+    } catch (error) {
+        debugLog("EPIC API error:", error);
+        throw error;
+    }
+}
+
+/**
+ * Récupère les dates disponibles pour EPIC
+ * Utile pour trouver la dernière date avec des images
+ */
+export async function getEPICAvailableDates(): Promise<string[]> {
+    debugLog("Fetching EPIC available dates");
+
+    const url = `https://api.nasa.gov/EPIC/api/natural/all?api_key=${NASA_API_KEY}`;
+
+    try {
+        const response = await fetchWithTimeout(url);
+        const data = await handleResponse<Array<{ date: string }>>(response);
+
+        const dates = data.map(item => item.date.split(" ")[0]);
+        debugLog(`EPIC available dates: ${dates.length} dates, latest: ${dates[0]}`);
+
+        return dates;
+    } catch (error) {
+        debugLog("EPIC available dates error:", error);
+        throw error;
+    }
 }
 
 export function getEPICImageUrl(date: string, imageName: string): string {

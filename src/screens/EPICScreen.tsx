@@ -11,7 +11,7 @@ import FavoriteButton from "../ui/components/FavoriteButton";
 import ErrorDisplay from "../ui/components/ErrorDisplay";
 import OptimizedImage from "../ui/components/OptimizedImage";
 
-import { getEPICImages, getEPICImageUrl, EPICImage } from "../services/nasa";
+import { getEPICImages, getEPICImageUrl, getEPICAvailableDates, EPICImage } from "../services/nasa";
 import { theme } from "../ui/theme";
 import { useFavorites } from "../hooks/useFavorites";
 import { useHistory } from "../hooks/useHistory";
@@ -50,7 +50,7 @@ export default function EPICScreen() {
         });
     };
 
-    const fetchEPICData = useCallback(async (selectedDate?: Date) => {
+    const fetchEPICData = useCallback(async (selectedDate?: Date, isInitialLoad = false) => {
         // Éviter les appels en double
         if (isFetching.current) return;
         isFetching.current = true;
@@ -60,7 +60,30 @@ export default function EPICScreen() {
             setError(null);
 
             const dateToFetch = selectedDate || date;
-            const data = await getEPICImages(formatDate(dateToFetch));
+            let data: EPICImage[] = [];
+
+            try {
+                data = await getEPICImages(formatDate(dateToFetch));
+            } catch (e) {
+                // Si c'est le chargement initial et qu'on a une erreur, essayer de trouver une date valide
+                if (isInitialLoad) {
+                    console.log("[EPIC] Initial fetch failed, trying to find available date...");
+                    try {
+                        const availableDates = await getEPICAvailableDates();
+                        if (availableDates.length > 0) {
+                            const latestDate = availableDates[0];
+                            console.log("[EPIC] Found latest date:", latestDate);
+                            setDate(new Date(latestDate));
+                            data = await getEPICImages(latestDate);
+                        }
+                    } catch (fallbackError) {
+                        console.log("[EPIC] Fallback also failed:", fallbackError);
+                        throw e; // Re-throw original error
+                    }
+                } else {
+                    throw e;
+                }
+            }
 
             if (data.length === 0) {
                 setError(createEmptyDataError("epic"));
@@ -68,8 +91,8 @@ export default function EPICScreen() {
                 return;
             }
 
-            // Add images to history
-            data.forEach((image) => {
+            // Add images to history (limit to first 5 to avoid spam)
+            data.slice(0, 5).forEach((image) => {
                 const imageUrl = getEPICImageUrl(formatDate(dateToFetch), image.image);
                 const savedImage: SavedImage = {
                     id: `epic-${image.identifier}`,
@@ -98,11 +121,11 @@ export default function EPICScreen() {
         if (hasInitialFetch.current) return;
         hasInitialFetch.current = true;
 
-        // Load images for yesterday by default (today's images may not be available yet)
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 2);
-        setDate(yesterday);
-        fetchEPICData(yesterday);
+        // Essayer avec une date de 3 jours en arrière (les images EPIC ont un délai)
+        const pastDate = new Date();
+        pastDate.setDate(pastDate.getDate() - 3);
+        setDate(pastDate);
+        fetchEPICData(pastDate, true); // isInitialLoad = true
     }, [fetchEPICData]);
 
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
