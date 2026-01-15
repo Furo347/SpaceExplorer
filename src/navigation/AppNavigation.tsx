@@ -67,7 +67,7 @@ export default function AppNavigation() {
                         else if (route.name === "APOD") iconName = "image";
                         else if (route.name === "MarsRover") iconName = "planet";
                         else if (route.name === "EPIC") iconName = "earth";
-                        else if (route.name === "Favorites") iconName = "heart";
+                        else if (route.name === "Favorites") iconName = "star";
                         else if (route.name === "History") iconName = "time";
                         else if (route.name === "About") iconName = "information-circle";
 

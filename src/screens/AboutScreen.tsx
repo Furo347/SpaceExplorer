@@ -24,7 +24,7 @@ const FEATURES = [
         description: "Admirez la Terre depuis l'espace grâce au satellite DSCOVR.",
     },
     {
-        icon: "heart" as const,
+        icon: "star" as const,
         title: "Favoris",
         description: "Sauvegardez vos images préférées pour les retrouver facilement.",
     },

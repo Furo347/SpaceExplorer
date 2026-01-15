@@ -138,12 +138,12 @@ export default function FavoritesScreen() {
                 {favorites.length === 0 ? (
                     <Card style={{ marginTop: theme.spacing.lg, alignItems: "center", paddingVertical: theme.spacing.xl }}>
                         <View style={{
-                            backgroundColor: theme.colors.primary + "20",
+                            backgroundColor: "#FFD700" + "20",
                             borderRadius: 50,
                             padding: theme.spacing.md,
                             marginBottom: theme.spacing.md
                         }}>
-                            <Ionicons name="heart-outline" size={48} color={theme.colors.primary} />
+                            <Ionicons name="star-outline" size={48} color="#FFD700" />
                         </View>
                         <Title size="md" style={{ marginBottom: theme.spacing.sm, textAlign: "center" }}>
                             Aucun favori
@@ -156,7 +156,7 @@ export default function FavoritesScreen() {
                                 lineHeight: 20,
                             }}
                         >
-                            Appuyez sur le cœur ❤️ sur une image{"\n"}pour l'ajouter à vos favoris.
+                            Appuyez sur l'étoile ⭐ sur une image{"\n"}pour l'ajouter à vos favoris.
                         </Text>
                     </Card>
                 ) : (

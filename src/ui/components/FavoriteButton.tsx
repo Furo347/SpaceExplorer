@@ -10,6 +10,9 @@ type FavoriteButtonProps = {
     style?: ViewStyle;
 };
 
+// Couleur dorée pour l'étoile favorite (visible en dark mode)
+const STAR_COLOR = "#FFD700";
+
 export default function FavoriteButton({
     isFavorite,
     onPress,
@@ -23,9 +26,9 @@ export default function FavoriteButton({
             activeOpacity={0.7}
         >
             <Ionicons
-                name={isFavorite ? "heart" : "heart-outline"}
+                name={isFavorite ? "star" : "star-outline"}
                 size={size}
-                color={isFavorite ? "#FF6B6B" : theme.colors.textSecondary}
+                color={isFavorite ? STAR_COLOR : theme.colors.textSecondary}
             />
         </TouchableOpacity>
     );

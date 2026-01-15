@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, Platform, ScrollView } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
 
 import Screen from "../ui/components/Screen";
 import Title from "../ui/components/Title";
@@ -62,8 +63,15 @@ export default function MarsRoverScreen() {
     const isFetching = useRef(false);
     const hasInitialFetch = useRef(false);
 
-    const { isFavorite, toggleFavorite } = useFavorites();
+    const { isFavorite, toggleFavorite, refreshFavorites } = useFavorites();
     const { addToHistory } = useHistory();
+
+    // Rafraîchir les favoris quand l'écran devient visible
+    useFocusEffect(
+        useCallback(() => {
+            refreshFavorites();
+        }, [refreshFavorites])
+    );
 
     const getRoverConfig = (roverName: string): RoverOption => {
         return ROVERS.find(r => r.value === roverName.toLowerCase()) || ROVERS[0];

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Text, Platform, ScrollView, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 
 import Screen from "../ui/components/Screen";
 import Title from "../ui/components/Title";
@@ -31,8 +32,15 @@ export default function APODScreen() {
     const isFetching = useRef(false);
     const hasInitialFetch = useRef(false);
 
-    const { isFavorite, toggleFavorite } = useFavorites();
+    const { isFavorite, toggleFavorite, refreshFavorites } = useFavorites();
     const { addToHistory } = useHistory();
+
+    // Rafraîchir les favoris quand l'écran devient visible
+    useFocusEffect(
+        useCallback(() => {
+            refreshFavorites();
+        }, [refreshFavorites])
+    );
 
     const MIN_DATE = new Date("1995-06-16");
     const MAX_DATE = new Date();

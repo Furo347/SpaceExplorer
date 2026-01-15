@@ -40,7 +40,7 @@ const FEATURES = [
 ];
 
 const QUICK_LINKS = [
-    { screen: "Favorites" as const, icon: "heart" as const, label: "Favoris" },
+    { screen: "Favorites" as const, icon: "star" as const, label: "Favoris" },
     { screen: "History" as const, icon: "time" as const, label: "Historique" },
     { screen: "About" as const, icon: "information-circle" as const, label: "À propos" },
 ];
