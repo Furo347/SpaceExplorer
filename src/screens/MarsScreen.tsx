@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, Platform, ScrollView } from "react-native";
+import { View, Text, Platform, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import Screen from "../ui/components/Screen";
 import Title from "../ui/components/Title";
@@ -216,46 +217,74 @@ export default function MarsRoverScreen() {
         fetchPhotos(date, rover);
     }, [date, rover, fetchPhotos]);
 
+    const formatDisplayDate = (d: Date) => {
+        return d.toLocaleDateString("fr-FR", {
+            weekday: "short",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    };
+
     return (
         <Screen>
-            <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
-                <Title size="lg" style={{ textAlign: "center", marginBottom: 20 }}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <Title size="lg" style={styles.title}>
                     Mars Rover Photos
                 </Title>
 
-                {/* Choix du rover */}
-                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 15 }}>
-                    {ROVERS.map((r) => (
-                        <PrimaryButton
-                            key={r.value}
-                            title={r.label}
-                            onPress={() => onRoverChange(r)}
-                            disabled={loading}
-                            style={{
-                                flex: 1,
-                                marginHorizontal: 5,
-                                backgroundColor: r.value === rover ? theme.colors.primary : theme.colors.surface,
-                            }}
-                        />
-                    ))}
+                {/* Sélection du rover */}
+                <Text style={styles.sectionLabel}>Rover</Text>
+                <View style={styles.roverContainer}>
+                    {ROVERS.map((r) => {
+                        const isSelected = r.value === rover;
+                        return (
+                            <TouchableOpacity
+                                key={r.value}
+                                onPress={() => !loading && onRoverChange(r)}
+                                disabled={loading}
+                                activeOpacity={0.7}
+                                style={[
+                                    styles.roverButton,
+                                    isSelected && styles.roverButtonSelected,
+                                    loading && styles.roverButtonDisabled,
+                                ]}
+                            >
+                                <Text
+                                    style={[
+                                        styles.roverButtonText,
+                                        isSelected && styles.roverButtonTextSelected,
+                                    ]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                >
+                                    {r.label}
+                                </Text>
+                                {r.endDate && (
+                                    <Text style={styles.roverStatus}>Terminé</Text>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
-                {/* Choix de la date */}
-                <PrimaryButton
-                    title="Choisir une date"
-                    onPress={() => setShowPicker(true)}
-                    disabled={loading}
-                />
+                {/* Affichage de la date sélectionnée */}
+                <Card style={styles.dateCard}>
+                    <View style={styles.dateHeader}>
+                        <Ionicons name="calendar" size={20} color={theme.colors.primary} />
+                        <Text style={styles.dateLabel}>Date sélectionnée</Text>
+                    </View>
+                    <Text style={styles.dateValue}>{formatDisplayDate(date)}</Text>
+                    <PrimaryButton
+                        title="Modifier la date"
+                        onPress={() => setShowPicker(true)}
+                        disabled={loading}
+                        style={styles.dateButton}
+                    />
+                </Card>
 
                 {showPicker && (
-                    <Card
-                        style={{
-                            marginVertical: 15,
-                            padding: 10,
-                            backgroundColor: theme.colors.backgroundSecondary,
-                            borderRadius: 10,
-                        }}
-                    >
+                    <Card style={styles.pickerCard}>
                         <DateTimePicker
                             value={date}
                             mode="date"
@@ -265,11 +294,13 @@ export default function MarsRoverScreen() {
                             onChange={onChangeDate}
                             style={{ width: "100%" }}
                         />
-                        {Platform.OS === 'ios' && <PrimaryButton
-                            title="Fermer"
-                            onPress={() => setShowPicker(false)}
-                            style={{ marginTop: 10 }}
-                        />}
+                        {Platform.OS === 'ios' && (
+                            <PrimaryButton
+                                title="Fermer"
+                                onPress={() => setShowPicker(false)}
+                                style={{ marginTop: 10 }}
+                            />
+                        )}
                     </Card>
                 )}
 
@@ -317,3 +348,96 @@ export default function MarsRoverScreen() {
         </Screen>
     );
 }
+
+const styles = StyleSheet.create({
+    scrollContent: {
+        padding: theme.spacing.md,
+        paddingBottom: 40,
+    },
+    title: {
+        textAlign: "center",
+        marginBottom: theme.spacing.lg,
+    },
+    sectionLabel: {
+        color: theme.colors.textSecondary,
+        fontSize: 12,
+        fontWeight: "600",
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        marginBottom: theme.spacing.sm,
+        marginLeft: theme.spacing.xs,
+    },
+    roverContainer: {
+        flexDirection: "row",
+        marginBottom: theme.spacing.md,
+        gap: theme.spacing.sm,
+    },
+    roverButton: {
+        flex: 1,
+        backgroundColor: theme.colors.surface,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
+        borderRadius: theme.radius.md,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 2,
+        borderColor: "transparent",
+        minHeight: 60,
+    },
+    roverButtonSelected: {
+        backgroundColor: theme.colors.primary + "20",
+        borderColor: theme.colors.primary,
+    },
+    roverButtonDisabled: {
+        opacity: 0.6,
+    },
+    roverButtonText: {
+        color: theme.colors.textSecondary,
+        fontSize: 14,
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    roverButtonTextSelected: {
+        color: theme.colors.primary,
+        fontWeight: "bold",
+    },
+    roverStatus: {
+        color: theme.colors.textSecondary,
+        fontSize: 10,
+        marginTop: 2,
+        opacity: 0.7,
+    },
+    dateCard: {
+        marginBottom: theme.spacing.md,
+        padding: theme.spacing.md,
+        alignItems: "center",
+    },
+    dateHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: theme.spacing.xs,
+    },
+    dateLabel: {
+        color: theme.colors.textSecondary,
+        fontSize: 12,
+        marginLeft: theme.spacing.xs,
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+    },
+    dateValue: {
+        color: theme.colors.textPrimary,
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: theme.spacing.md,
+        textAlign: "center",
+    },
+    dateButton: {
+        paddingHorizontal: theme.spacing.lg,
+    },
+    pickerCard: {
+        marginBottom: theme.spacing.md,
+        padding: theme.spacing.sm,
+        backgroundColor: theme.colors.backgroundSecondary,
+    },
+});
+
