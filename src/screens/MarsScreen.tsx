@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Image, Platform, ScrollView } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
@@ -8,12 +8,14 @@ import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
+import ErrorDisplay from "../ui/components/ErrorDisplay";
 
 import { getMarsPhotos, MarsPhoto } from "../services/nasa";
 import { theme } from "../ui/theme";
 import { useFavorites } from "../hooks/useFavorites";
 import { useHistory } from "../hooks/useHistory";
 import { SavedImage } from "../types/storage";
+import { ApiError, createApiError, createEmptyDataError } from "../types/errors";
 
 type RoverOption = {
     label: string;
@@ -29,7 +31,7 @@ export default function MarsRoverScreen() {
     const [rover, setRover] = useState<string>(ROVERS[0].value);
     const [photos, setPhotos] = useState<MarsPhoto[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<ApiError | null>(null);
 
     const [date, setDate] = useState(new Date("2015-09-27"));
     const [showPicker, setShowPicker] = useState(false);
@@ -55,7 +57,7 @@ export default function MarsRoverScreen() {
 
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
-    const fetchPhotos = async (selectedDate?: Date, selectedRover?: string) => {
+    const fetchPhotos = useCallback(async (selectedDate?: Date, selectedRover?: string) => {
         try {
             setLoading(true);
             setError(null);
@@ -74,7 +76,9 @@ export default function MarsRoverScreen() {
             );
 
             if (data.length === 0) {
-                setError("Aucune photo trouvée pour ce rover autour de cette date.");
+                setError(createEmptyDataError("mars"));
+                setPhotos([]);
+                return;
             }
 
             // Add photos to history
@@ -94,12 +98,12 @@ export default function MarsRoverScreen() {
             setPhotos(data);
         } catch (e) {
             console.log("Mars API error:", e);
-            setError("Impossible de charger les photos du rover.");
+            setError(createApiError(e, "mars"));
             setPhotos([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [rover, date, addToHistory]);
 
     useEffect(() => {
         fetchPhotos();
@@ -119,13 +123,21 @@ export default function MarsRoverScreen() {
 
         const minDate = getMinDateForRover(rover);
         if (selectedDate < minDate || selectedDate > MAX_DATE) {
-            setError(`Veuillez choisir une date entre ${formatDate(minDate)} et aujourd'hui.`);
+            setError({
+                type: "empty",
+                message: `Veuillez choisir une date entre ${formatDate(minDate)} et aujourd'hui.`,
+                canRetry: false,
+            });
             return;
         }
 
         setDate(selectedDate);
         fetchPhotos(selectedDate, rover);
     };
+
+    const handleRetry = useCallback(() => {
+        fetchPhotos(date, rover);
+    }, [date, rover, fetchPhotos]);
 
     return (
         <Screen>
@@ -183,7 +195,7 @@ export default function MarsRoverScreen() {
                 {loading ? (
                     <Loader />
                 ) : error ? (
-                    <Text style={{ color: theme.colors.error, textAlign: "center", marginTop: 20 }}>{error}</Text>
+                    <ErrorDisplay error={error} onRetry={handleRetry} />
                 ) : (
                     photos.map((photo) => (
                         <Card key={photo.id} style={{ marginTop: 15 }}>

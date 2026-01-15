@@ -66,10 +66,10 @@ export default function HistoryScreen() {
     };
 
     const renderHistoryCard = (item: HistoryItem) => (
-        <Card key={item.id} style={{ marginTop: 15 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <Card key={item.id} style={{ marginTop: theme.spacing.md }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: theme.spacing.sm }}>
                 <View style={{ flex: 1 }}>
-                    <Title size="md" style={{ marginBottom: 5 }}>
+                    <Title size="md" style={{ marginBottom: theme.spacing.xs }}>
                         {item.title}
                     </Title>
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
@@ -88,8 +88,8 @@ export default function HistoryScreen() {
                 style={{
                     width: "100%",
                     height: 200,
-                    borderRadius: 10,
-                    marginBottom: 10,
+                    borderRadius: theme.radius.md,
+                    marginBottom: theme.spacing.sm,
                 }}
                 resizeMode="cover"
             />
@@ -111,7 +111,7 @@ export default function HistoryScreen() {
                 style={{
                     color: theme.colors.textSecondary,
                     fontSize: 11,
-                    marginTop: 8,
+                    marginTop: theme.spacing.sm,
                 }}
             >
                 Consulté le {formatDate(item.viewedAt)} à {formatTime(item.viewedAt)}

@@ -1,4 +1,5 @@
 import { NASA_API_KEY } from "../config";
+import { ApiHttpError } from "../types/errors";
 
 /* ============================
    Types
@@ -58,6 +59,41 @@ export type EPICImage = {
 
 const NASA_BASE_URL = "https://api.nasa.gov";
 
+/**
+ * Timeout pour les requêtes API (en ms)
+ */
+const API_TIMEOUT = 15000;
+
+/**
+ * Effectue une requête avec timeout
+ */
+async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        return response;
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new ApiHttpError(408, "La requête a pris trop de temps. Veuillez réessayer.");
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+/**
+ * Gère la réponse HTTP et renvoie une erreur appropriée si nécessaire
+ */
+async function handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+        throw new ApiHttpError(response.status, `NASA API error (${response.status})`);
+    }
+    return (await response.json()) as T;
+}
+
 async function apiGet<T>(
     endpoint: string,
     params: Record<string, string | undefined> = {}
@@ -70,14 +106,8 @@ async function apiGet<T>(
     });
 
     const url = `${NASA_BASE_URL}${endpoint}?${query.toString()}`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error(`NASA API error (${response.status})`);
-    }
-
-    return (await response.json()) as T;
+    const response = await fetchWithTimeout(url);
+    return handleResponse<T>(response);
 }
 
 /* ============================
@@ -100,13 +130,8 @@ export async function getMarsPhotos(
     });
     const url = `https://api.nasa.gov/mars-photos/api/v1/rovers/${rover.toLowerCase()}/photos?${query.toString()}`;
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error(`NASA API error (${response.status})`);
-    }
-
-    const result = await response.json();
+    const response = await fetchWithTimeout(url);
+    const result = await handleResponse<MarsResponse>(response);
     return result.photos;
 }
 
@@ -134,15 +159,9 @@ export async function searchImages(
 }
 
 export async function getEPICImages(date: string): Promise<EPICImage[]> {
-    const response = await fetch(
-        `https://api.nasa.gov/EPIC/api/natural/date/${date}?api_key=${NASA_API_KEY}`
-    );
-
-    if (!response.ok) {
-        throw new Error(`NASA EPIC API error (${response.status})`);
-    }
-
-    return (await response.json()) as EPICImage[];
+    const url = `https://api.nasa.gov/EPIC/api/natural/date/${date}?api_key=${NASA_API_KEY}`;
+    const response = await fetchWithTimeout(url);
+    return handleResponse<EPICImage[]>(response);
 }
 
 export function getEPICImageUrl(date: string, imageName: string): string {
@@ -150,4 +169,3 @@ export function getEPICImageUrl(date: string, imageName: string): string {
     const [year, month, day] = date.split("-");
     return `https://api.nasa.gov/EPIC/archive/natural/${year}/${month}/${day}/png/${imageName}.png?api_key=${NASA_API_KEY}`;
 }
-

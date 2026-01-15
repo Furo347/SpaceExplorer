@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Image, Text, Platform, ScrollView, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,17 +9,19 @@ import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
+import ErrorDisplay from "../ui/components/ErrorDisplay";
 
 import { getAPOD } from "../services/nasa";
 import { theme } from "../ui/theme";
 import { useFavorites } from "../hooks/useFavorites";
 import { useHistory } from "../hooks/useHistory";
 import { SavedImage } from "../types/storage";
+import { ApiError, createApiError, createEmptyDataError } from "../types/errors";
 
 export default function APODScreen() {
     const [apod, setApod] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<ApiError | null>(null);
 
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
@@ -32,7 +34,7 @@ export default function APODScreen() {
 
     const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
-    const fetchAPODData = async (selectedDate?: Date) => {
+    const fetchAPODData = useCallback(async (selectedDate?: Date) => {
         try {
             setLoading(true);
             setError(null);
@@ -40,6 +42,12 @@ export default function APODScreen() {
             const data = selectedDate
                 ? await getAPOD(formatDate(selectedDate))
                 : await getAPOD();
+
+            if (!data) {
+                setError(createEmptyDataError("apod"));
+                setApod(null);
+                return;
+            }
 
             setApod(data);
 
@@ -57,12 +65,12 @@ export default function APODScreen() {
                 addToHistory(savedImage);
             }
         } catch (e) {
-            setError("Impossible de charger l'image APOD pour cette date.");
+            setError(createApiError(e, "apod"));
             setApod(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [addToHistory]);
 
     useEffect(() => {
         fetchAPODData();
@@ -71,11 +79,19 @@ export default function APODScreen() {
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
         if (!selectedDate) return;
         if (selectedDate < MIN_DATE || selectedDate > MAX_DATE) {
-            setError("Veuillez choisir une date entre le 16/06/1995 et aujourd’hui.");
+            setError({
+                type: "empty",
+                message: "Veuillez choisir une date entre le 16/06/1995 et aujourd'hui.",
+                canRetry: false,
+            });
             return;
         }
         setDate(selectedDate);
     };
+
+    const handleRetry = useCallback(() => {
+        fetchAPODData(date);
+    }, [date, fetchAPODData]);
 
     return (
         <Screen>
@@ -119,9 +135,7 @@ export default function APODScreen() {
                 {loading ? (
                     <Loader />
                 ) : error ? (
-                    <Text style={{ color: theme.colors.error, textAlign: "center", marginTop: 20 }}>
-                        {error}
-                    </Text>
+                    <ErrorDisplay error={error} onRetry={handleRetry} />
                 ) : (
                     apod && (
                         <Card style={{ marginTop: 15 }}>

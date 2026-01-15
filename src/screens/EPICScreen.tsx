@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Image, Text, Platform, ScrollView, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
@@ -8,17 +8,19 @@ import Card from "../ui/components/Card";
 import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import FavoriteButton from "../ui/components/FavoriteButton";
+import ErrorDisplay from "../ui/components/ErrorDisplay";
 
 import { getEPICImages, getEPICImageUrl, EPICImage } from "../services/nasa";
 import { theme } from "../ui/theme";
 import { useFavorites } from "../hooks/useFavorites";
 import { useHistory } from "../hooks/useHistory";
 import { SavedImage } from "../types/storage";
+import { ApiError, createApiError, createEmptyDataError } from "../types/errors";
 
 export default function EPICScreen() {
     const [images, setImages] = useState<EPICImage[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<ApiError | null>(null);
 
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
@@ -43,7 +45,7 @@ export default function EPICScreen() {
         });
     };
 
-    const fetchEPICData = async (selectedDate?: Date) => {
+    const fetchEPICData = useCallback(async (selectedDate?: Date) => {
         try {
             setLoading(true);
             setError(null);
@@ -52,7 +54,9 @@ export default function EPICScreen() {
             const data = await getEPICImages(formatDate(dateToFetch));
 
             if (data.length === 0) {
-                setError("Aucune image disponible pour cette date. Essayez une date antérieure.");
+                setError(createEmptyDataError("epic"));
+                setImages([]);
+                return;
             }
 
             // Add images to history
@@ -72,12 +76,12 @@ export default function EPICScreen() {
 
             setImages(data);
         } catch (e) {
-            setError("Impossible de charger les images EPIC pour cette date.");
+            setError(createApiError(e, "epic"));
             setImages([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [date, addToHistory]);
 
     useEffect(() => {
         // Load images for yesterday by default (today's images may not be available yet)
@@ -90,11 +94,19 @@ export default function EPICScreen() {
     const onChangeDate = (_event: DateTimePickerEvent, selectedDate?: Date) => {
         if (!selectedDate) return;
         if (selectedDate < MIN_DATE || selectedDate > MAX_DATE) {
-            setError("Veuillez choisir une date entre le 13/06/2015 et aujourd'hui.");
+            setError({
+                type: "empty",
+                message: "Veuillez choisir une date entre le 13/06/2015 et aujourd'hui.",
+                canRetry: false,
+            });
             return;
         }
         setDate(selectedDate);
     };
+
+    const handleRetry = useCallback(() => {
+        fetchEPICData(date);
+    }, [date, fetchEPICData]);
 
     return (
         <Screen>
@@ -160,9 +172,7 @@ export default function EPICScreen() {
                 {loading ? (
                     <Loader />
                 ) : error ? (
-                    <Text style={{ color: theme.colors.error, textAlign: "center", marginTop: 20 }}>
-                        {error}
-                    </Text>
+                    <ErrorDisplay error={error} onRetry={handleRetry} />
                 ) : (
                     <View style={{ marginTop: 15 }}>
                         <Text
