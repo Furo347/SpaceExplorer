@@ -103,24 +103,59 @@ export type NeoWsFeedResponse = {
     near_earth_objects: Record<string, NeoWsAsteroid[]>;
 };
 
-export type DonkiEventType =
-    | "all"
-    | "FLR"
-    | "SEP"
-    | "CME"
-    | "IPS"
-    | "MPC"
-    | "GST"
-    | "RBE"
-    | "report";
+export type DonkiEventType = "FLR" | "SEP" | "CME" | "IPS" | "MPC" | "GST" | "RBE";
 
-export type DonkiEvent = {
-    messageID: string;
-    messageType: string;
-    messageIssueTime: string;
-    messageURL: string;
-    messageBody: string;
+export type DonkiUiEvent = {
+    id: string;
+    type: DonkiEventType;
+    title: string;
+    date: string;
+    source?: string;
+    summary: string;
+    link?: string;
 };
+
+type DonkiFlrEvent = {
+    flrID: string;
+    beginTime: string;
+    peakTime?: string;
+    endTime?: string;
+    classType?: string;
+    sourceLocation?: string;
+    link?: string;
+};
+
+type DonkiSepEvent = {
+    sepID: string;
+    eventTime: string;
+    instruments?: Array<{ displayName?: string }>;
+    link?: string;
+};
+
+type DonkiCmeEvent = {
+    activityID: string;
+    startTime: string;
+    cmeAnalyses?: Array<{
+        speed?: number;
+        type?: string;
+        latitude?: number;
+        longitude?: number;
+    }>;
+    note?: string;
+    link?: string;
+};
+
+type DonkiGstEvent = {
+    gstID: string;
+    startTime: string;
+    allKpIndex?: Array<{
+        kpIndex?: number;
+        observedTime?: string;
+    }>;
+    link?: string;
+};
+
+type DonkiGenericEvent = Record<string, unknown>;
 
 /* ============================
    API Core
@@ -133,6 +168,18 @@ const API_TIMEOUT = 15000;
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 const NEO_WS_MAX_RANGE_DAYS = 7;
+
+const DONKI_SUPPORTED_TYPES: DonkiEventType[] = ["FLR", "SEP", "CME", "IPS", "MPC", "GST", "RBE"];
+
+const DONKI_TYPE_TITLES: Record<DonkiEventType, string> = {
+    FLR: "Solar Flare",
+    SEP: "Solar Energetic Particles",
+    CME: "Coronal Mass Ejection",
+    IPS: "Interplanetary Shock",
+    MPC: "Magnetopause Crossing",
+    GST: "Geomagnetic Storm",
+    RBE: "Radiation Belt Enhancement",
+};
 
 const DEBUG_MODE = __DEV__ ?? true;
 
@@ -177,6 +224,196 @@ function normalizeApiError(error: unknown, fallbackMessage: string): ApiHttpErro
     }
 
     return new ApiHttpError(503, fallbackMessage);
+}
+
+function asString(value: unknown): string | undefined {
+    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+    return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function asRecordArray(value: unknown): Array<Record<string, unknown>> {
+    return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null) : [];
+}
+
+function stripMarkdownNoise(text: string): string {
+    const withoutLinks = text.replace(/\[([^\]]+)]\(([^)]+)\)/g, "$1");
+
+    return withoutLinks
+        .replace(/\r/g, "")
+        .split("\n")
+        .map((line) => line
+            .replace(/^\s{0,3}(?:#{1,6}\s*|[-*+]\s+|>\s+|\d+[.)]\s+)/, "")
+            .replace(/\s*#{1,6}\s*/g, " ")
+            .trim())
+        .filter(Boolean)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function truncateSentence(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    const truncated = text.slice(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(" ");
+    return `${(lastSpace > Math.floor(maxLength * 0.6) ? truncated.slice(0, lastSpace) : truncated).trim()}...`;
+}
+
+function getRawDate(raw: Record<string, unknown>): string | undefined {
+    return asString(raw.beginTime)
+        ?? asString(raw.startTime)
+        ?? asString(raw.eventTime)
+        ?? asString(raw.submissionTime)
+        ?? asString(raw.messageIssueTime)
+        ?? asString(raw.peakTime);
+}
+
+function getRawLink(raw: Record<string, unknown>): string | undefined {
+    return asString(raw.link) ?? asString(raw.messageURL);
+}
+
+function getRawId(type: DonkiEventType, raw: Record<string, unknown>, fallbackIndex: number, date: string): string {
+    return asString(raw.flrID)
+        ?? asString(raw.sepID)
+        ?? asString(raw.activityID)
+        ?? asString(raw.gstID)
+        ?? asString(raw.rbeID)
+        ?? asString(raw.mpcID)
+        ?? asString(raw.ipsID)
+        ?? asString(raw.messageID)
+        ?? `${type}-${date}-${fallbackIndex}`;
+}
+
+function buildFlrSummary(raw: DonkiFlrEvent): string {
+    const classType = asString(raw.classType);
+    const sourceLocation = asString(raw.sourceLocation);
+    const peakTime = asString(raw.peakTime);
+
+    const details: string[] = [];
+    if (classType) details.push(`classe ${classType}`);
+    if (sourceLocation) details.push(`source ${sourceLocation}`);
+    if (peakTime) details.push(`pic vers ${peakTime}`);
+
+    if (details.length === 0) {
+        return "Une eruption solaire a ete detectee sur la periode selectionnee.";
+    }
+
+    return `Une eruption solaire est signalee (${details.join(", ")}).`;
+}
+
+function buildSepSummary(raw: DonkiSepEvent): string {
+    const instruments = (raw.instruments ?? [])
+        .map((instrument) => asString(instrument.displayName))
+        .filter((name): name is string => Boolean(name));
+
+    if (instruments.length === 0) {
+        return "Des particules energetiques solaires ont ete detectees.";
+    }
+
+    return `Des particules energetiques solaires ont ete detectees par ${instruments.slice(0, 2).join(" / ")}.`;
+}
+
+function buildCmeSummary(raw: DonkiCmeEvent): string {
+    const analyses = raw.cmeAnalyses ?? [];
+    const firstAnalysis = analyses[0];
+    const speed = asNumber(firstAnalysis?.speed);
+    const analysisType = asString(firstAnalysis?.type);
+    const note = asString(raw.note);
+
+    const details: string[] = [];
+    if (analysisType) details.push(`type ${analysisType}`);
+    if (typeof speed === "number") details.push(`vitesse estimee ${Math.round(speed)} km/s`);
+
+    if (details.length > 0) {
+        return `Une ejection de masse coronale est suivie (${details.join(", ")}).`;
+    }
+
+    if (note) {
+        return truncateSentence(stripMarkdownNoise(note), 190);
+    }
+
+    return "Une ejection de masse coronale est en cours de suivi par la NASA.";
+}
+
+function buildGstSummary(raw: DonkiGstEvent): string {
+    const kpValues = (raw.allKpIndex ?? [])
+        .map((item) => asNumber(item.kpIndex))
+        .filter((value): value is number => typeof value === "number");
+
+    if (kpValues.length === 0) {
+        return "Une activite geomagnetique a ete signalee sur la periode selectionnee.";
+    }
+
+    const maxKp = Math.max(...kpValues);
+    return `Tempete geomagnetique detectee, avec un indice Kp maximal de ${maxKp.toFixed(1)}.`;
+}
+
+function buildGenericSummary(type: DonkiEventType, raw: Record<string, unknown>): string {
+    const messageBody = asString(raw.messageBody);
+    if (messageBody) {
+        const cleaned = stripMarkdownNoise(messageBody);
+        if (cleaned) return truncateSentence(cleaned, 190);
+    }
+
+    switch (type) {
+        case "IPS":
+            return "Une onde de choc interplanetaire est rapportee sur cette periode.";
+        case "MPC":
+            return "Une variation de la magnetopause terrestre est observee.";
+        case "RBE":
+            return "Une evolution de la ceinture de radiation a ete detectee.";
+        default:
+            return "Evenement de meteo spatiale detecte par la NASA.";
+    }
+}
+
+function mapDonkiRawEvent(type: DonkiEventType, raw: Record<string, unknown>, index: number): DonkiUiEvent | null {
+    const date = getRawDate(raw);
+    if (!date) {
+        debugLog(`DONKI ${type}: skipped event without date`, raw);
+        return null;
+    }
+
+    let summary: string;
+    if (type === "FLR") {
+        summary = buildFlrSummary(raw as DonkiFlrEvent);
+    } else if (type === "SEP") {
+        summary = buildSepSummary(raw as DonkiSepEvent);
+    } else if (type === "CME") {
+        summary = buildCmeSummary(raw as DonkiCmeEvent);
+    } else if (type === "GST") {
+        summary = buildGstSummary(raw as DonkiGstEvent);
+    } else {
+        summary = buildGenericSummary(type, raw);
+    }
+
+    const source = asString(raw.sourceLocation)
+        ?? asString(raw.catalog)
+        ?? asString(raw.classType)
+        ?? undefined;
+
+    return {
+        id: getRawId(type, raw, index, date),
+        type,
+        title: DONKI_TYPE_TITLES[type],
+        date,
+        source,
+        summary: truncateSentence(summary, 220),
+        link: getRawLink(raw),
+    };
+}
+
+function sortDonkiEventsByDate(events: DonkiUiEvent[]): DonkiUiEvent[] {
+    return [...events].sort((a, b) => {
+        const timeA = new Date(a.date).getTime();
+        const timeB = new Date(b.date).getTime();
+        if (Number.isNaN(timeA) || Number.isNaN(timeB)) {
+            return b.date.localeCompare(a.date);
+        }
+        return timeB - timeA;
+    });
 }
 
 async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Promise<Response> {
@@ -259,7 +496,10 @@ export async function getNearEarthObjects(date: string): Promise<NeoWsAsteroid[]
     }
 }
 
-export async function getDonkiEvents(startDate: string, endDate: string): Promise<DonkiEvent[]> {
+export async function getDonkiEvents(startDate: string, endDate: string): Promise<DonkiUiEvent[]> {
+    assertIsoDate(startDate, "startDate");
+    assertIsoDate(endDate, "endDate");
+
     const rangeDays = diffDays(startDate, endDate);
 
     if (rangeDays < 0) {
@@ -273,19 +513,34 @@ export async function getDonkiEvents(startDate: string, endDate: string): Promis
     debugLog(`Fetching DONKI events from ${startDate} to ${endDate}`);
 
     try {
-        const data = await apiGet<DonkiEvent[]>("/DONKI/notifications", {
-            startDate,
-            endDate,
-            type: "all",
-        });
+        const results = await Promise.allSettled(
+            DONKI_SUPPORTED_TYPES.map(async (type) => {
+                const data = await apiGet<DonkiGenericEvent[]>(`/DONKI/${type}`, {
+                    startDate,
+                    endDate,
+                });
 
-        if (!Array.isArray(data)) {
-            debugLog("DONKI response is not an array:", typeof data);
-            return [];
+                const rawEvents = asRecordArray(data);
+                const mappedEvents = rawEvents
+                    .map((event, index) => mapDonkiRawEvent(type, event, index))
+                    .filter((event): event is DonkiUiEvent => event !== null);
+
+                debugLog(`DONKI ${type}: ${mappedEvents.length} event(s) mapped`);
+                return mappedEvents;
+            })
+        );
+
+        const fulfilled = results.filter((result): result is PromiseFulfilledResult<DonkiUiEvent[]> => result.status === "fulfilled");
+        const rejected = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+
+        if (fulfilled.length === 0 && rejected.length > 0) {
+            throw rejected[0].reason;
         }
 
-        debugLog(`DONKI events received: ${data.length}`);
-        return data;
+        const merged = fulfilled.flatMap((result) => result.value);
+        debugLog(`DONKI total events mapped: ${merged.length}`);
+
+        return sortDonkiEventsByDate(merged);
     } catch (error) {
         debugLog("DONKI API error:", error);
         throw normalizeApiError(error, "Service DONKI temporairement indisponible");

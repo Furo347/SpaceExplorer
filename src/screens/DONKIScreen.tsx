@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import Screen from "../ui/components/Screen";
@@ -9,32 +9,12 @@ import PrimaryButton from "../ui/components/PrimaryButton";
 import Loader from "../ui/components/Loader";
 import ErrorDisplay from "../ui/components/ErrorDisplay";
 
-import { DonkiEvent, getDonkiEvents } from "../services/nasa";
+import { DonkiUiEvent, getDonkiEvents } from "../services/nasa";
 import { ApiError, createApiError, createEmptyDataError } from "../types/errors";
 import { theme } from "../ui/theme";
 
 const MAX_RANGE_DAYS = 7;
 type PickerTarget = "start" | "end" | null;
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-    FLR: "Eruption solaire (FLR)",
-    SEP: "Particules energetiques (SEP)",
-    CME: "Ejection de masse coronale (CME)",
-    IPS: "Choc interplanetaire (IPS)",
-    MPC: "Passage magnetopause (MPC)",
-    GST: "Tempete geomagnetique (GST)",
-    RBE: "Ceinture de radiation (RBE)",
-};
-
-const EVENT_TYPE_HINTS: Record<string, string> = {
-    FLR: "Emission de rayonnement solaire intense.",
-    SEP: "Particules energetiques pouvant impacter les satellites.",
-    CME: "Nuage plasma/magnetique ejecte par le Soleil.",
-    IPS: "Onde de choc dans le milieu interplanetaire.",
-    MPC: "Variation de la magnetopause terrestre.",
-    GST: "Activite geomagnetique accrue autour de la Terre.",
-    RBE: "Evolution de la ceinture de radiation terrestre.",
-};
 
 function formatDate(date: Date): string {
     return date.toISOString().split("T")[0];
@@ -78,29 +58,6 @@ function getRangeError(startDate: Date, endDate: Date): string | null {
     return null;
 }
 
-function getEventTypeLabel(type?: string): string {
-    if (!type) return "Type inconnu";
-    return EVENT_TYPE_LABELS[type] ?? type;
-}
-
-function getEventTypeHint(type?: string): string {
-    if (!type) return "Classification non fournie par la NASA.";
-    return EVENT_TYPE_HINTS[type] ?? "Evenement de meteo spatiale signale par la NASA.";
-}
-
-function getNormalizedSummary(value?: string): string {
-    const fallback = "Aucun resume disponible pour cet evenement.";
-    if (!value) return fallback;
-
-    const normalized = value.trim().split(/\s+/).join(" ");
-    if (!normalized) return fallback;
-
-    const maxLength = 260;
-    if (normalized.length <= maxLength) return normalized;
-
-    return `${normalized.slice(0, maxLength)}...`;
-}
-
 function getShortSourceLabel(url?: string): string {
     if (!url) return "";
 
@@ -121,7 +78,7 @@ export default function DONKIScreen() {
     const [endDate, setEndDate] = useState<Date>(() => new Date());
     const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
 
-    const [events, setEvents] = useState<DonkiEvent[]>([]);
+    const [events, setEvents] = useState<DonkiUiEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<ApiError | null>(null);
 
@@ -189,6 +146,17 @@ export default function DONKIScreen() {
         fetchDonkiData(startDate, endDate);
     };
 
+    const handleOpenLink = async (url: string) => {
+        try {
+            const canOpen = await Linking.canOpenURL(url);
+            if (canOpen) {
+                await Linking.openURL(url);
+            }
+        } catch (openError) {
+            console.log("Impossible d'ouvrir le lien DONKI:", openError);
+        }
+    };
+
     const renderContent = () => {
         if (loading) {
             return <Loader />;
@@ -205,36 +173,37 @@ export default function DONKIScreen() {
                 </Text>
 
                 {events.map((event) => {
-                    const eventType = (event.messageType || "").toUpperCase();
-                    const eventLabel = getEventTypeLabel(eventType);
-                    const eventHint = getEventTypeHint(eventType);
-                    const summary = getNormalizedSummary(event.messageBody);
-                    const sourceLabel = getShortSourceLabel(event.messageURL);
+                    const sourceLabel = event.source ?? getShortSourceLabel(event.link);
 
                     return (
-                        <Card key={`${event.messageID}-${event.messageIssueTime}`} style={styles.eventCard}>
+                        <Card key={event.id} style={styles.eventCard}>
                             <View style={styles.eventHeaderRow}>
                                 <View style={styles.eventTypeBadge}>
-                                    <Text style={styles.eventTypeBadgeText}>{eventType || "N/A"}</Text>
+                                    <Text style={styles.eventTypeBadgeText}>{event.type}</Text>
                                 </View>
-                                <Text style={styles.eventDate}>Le {formatIssueDate(event.messageIssueTime)}</Text>
+                                <Text style={styles.eventDate}>Le {formatIssueDate(event.date)}</Text>
                             </View>
 
                             <Title size="md" style={styles.eventTitle}>
-                                {eventLabel}
+                                {event.title}
                             </Title>
 
-                            <Text style={styles.eventHint}>{eventHint}</Text>
+                            <Text style={styles.sectionLabel}>En bref</Text>
+                            <Text style={styles.eventBrief}>{event.summary}</Text>
 
-                            <Text style={styles.sectionLabel}>Resume</Text>
-                            <Text style={styles.eventDescription}>{summary}</Text>
-
-                            {event.messageURL ? (
+                            {sourceLabel ? (
                                 <View style={styles.sourceRow}>
                                     <Text style={styles.sectionLabel}>Source</Text>
                                     <Text style={styles.eventSource}>{sourceLabel}</Text>
-                                    <Text style={styles.eventSourceUrl}>{event.messageURL}</Text>
                                 </View>
+                            ) : null}
+
+                            {event.link ? (
+                                <PrimaryButton
+                                    title="Voir plus"
+                                    onPress={() => handleOpenLink(event.link as string)}
+                                    style={styles.moreButton}
+                                />
                             ) : null}
                         </Card>
                     );
@@ -408,12 +377,6 @@ const styles = StyleSheet.create({
         textAlign: "left",
         marginBottom: theme.spacing.xs,
     },
-    eventHint: {
-        color: theme.colors.textSecondary,
-        fontSize: 13,
-        lineHeight: 18,
-        marginBottom: theme.spacing.sm,
-    },
     eventDate: {
         color: theme.colors.primary,
         fontSize: 12,
@@ -425,10 +388,11 @@ const styles = StyleSheet.create({
         letterSpacing: 0.8,
         marginBottom: theme.spacing.xs,
     },
-    eventDescription: {
+    eventBrief: {
         color: theme.colors.textPrimary,
         fontSize: 14,
-        lineHeight: 20,
+        lineHeight: 21,
+        fontWeight: "600",
         marginBottom: theme.spacing.sm,
     },
     sourceRow: {
@@ -440,10 +404,8 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         marginBottom: theme.spacing.xs,
     },
-    eventSourceUrl: {
-        color: theme.colors.textSecondary,
-        fontSize: 12,
-        lineHeight: 18,
+    moreButton: {
+        marginTop: theme.spacing.sm,
     },
 });
 
