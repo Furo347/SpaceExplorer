@@ -1,270 +1,174 @@
-# 🚀 SpaceExplorer
+# SpaceExplorer
 
-**Application mobile d'exploration spatiale utilisant les APIs publiques de la NASA**
+Application mobile Expo/React Native de consultation de donnees spatiales NASA, realisee dans un objectif pedagogique (architecture mobile, integration API, UX) et fonctionnel (visualisation, favoris, historique).
 
----
+## Contexte du projet
 
-## 📋 Description
+Ce projet s'inscrit dans un cadre academique de niveau Master (Ynov Campus). L'application sert de support de mise en pratique pour :
 
-SpaceExplorer est une application mobile développée avec **Expo** et **React Native** permettant d'explorer l'univers à travers les données publiques de la NASA. L'application offre un accès simplifié aux images astronomiques, aux photographies des rovers martiens et aux vues de la Terre depuis l'espace.
+- l'integration d'APIs publiques REST (NASA Open APIs) ;
+- la structuration d'une application mobile TypeScript ;
+- la gestion des etats UI (chargement, erreur, vide) ;
+- la persistance locale (favoris, historique).
 
-### Objectifs
+## Fonctionnalites principales
 
-- **Pédagogique** : Mise en pratique des concepts React Native, gestion d'état, appels API REST, navigation et persistance des données
-- **Fonctionnel** : Fournir une interface intuitive pour consulter et sauvegarder des contenus issus des APIs NASA
+### APOD (Astronomy Picture of the Day)
 
----
+- Consultation de l'image astronomique du jour pour une date choisie.
+- Affichage du titre, de l'explication et du media (image/video).
+- Navigation par date avec UX de validation explicite.
 
-## 🎓 Contexte du projet
+### NeoWs (Near Earth Objects)
 
-Ce projet a été réalisé dans le cadre d'un cursus de **Master** à **Ynov Campus**. Il s'inscrit dans une démarche d'apprentissage des technologies mobiles cross-platform et de l'intégration d'APIs publiques.
+- Affichage des objets proches de la Terre pour une date donnee.
+- Informations principales : nom, date d'approche, vitesse, distance, danger potentiel.
+- Etats `loading`, erreur et vide geres de facon explicite.
 
-L'application exploite les **NASA Open APIs**, un ensemble d'APIs RESTful gratuites donnant accès à une vaste collection de données spatiales : images astronomiques, photographies martiennes, observations terrestres, etc.
+### DONKI (Space Weather)
 
----
+- Consultation d'evenements recents de meteo spatiale NASA sur une plage courte.
+- Normalisation front des donnees heterogenes pour un rendu lisible.
+- Affichage d'un resume court et d'un lien NASA (`Voir plus`) quand disponible.
 
-## ✨ Fonctionnalités principales
+### Favoris
 
-### 🖼️ APOD (Astronomy Picture of the Day)
-- Consultation de l'image astronomique du jour sélectionnée par la NASA
-- Navigation par date (depuis le 16 juin 1995)
-- Affichage du titre, de l'explication scientifique et de l'image haute résolution
-- Gestion des contenus vidéo (YouTube) avec indication appropriée
+- Ajout/suppression d'elements en favoris via icone etoile (vide/pleine).
+- Stockage local persistant avec synchronisation entre ecrans.
 
-### 🔴 Mars Rover Photos
-- Exploration des photographies prises par les rovers martiens :
-  - **Curiosity** (actif depuis 2012)
-  - **Opportunity** (2004-2019)
-  - **Spirit** (2004-2010)
-- Sélection par date avec plages adaptées à chaque rover
-- Affichage des métadonnées : caméra utilisée, date terrestre, statut du rover
+### Historique
 
-### 🌍 EPIC (Earth Polychromatic Imaging Camera)
-- Visualisation des images de la Terre capturées par le satellite DSCOVR
-- Images en couleurs naturelles depuis le point de Lagrange L1
-- Métadonnées géographiques (coordonnées du centroïde)
-- Récupération automatique des dates disponibles
+- Historique de consultation des contenus.
+- Actions rapides depuis l'historique (dont ajout en favoris selon le type).
 
-### ❤️ Favoris
-- Sauvegarde locale des images préférées
-- Organisation par source (APOD, Mars, EPIC)
-- Suppression individuelle ou globale
-- Persistance entre les sessions
+## Stack technique
 
-### 📜 Historique
-- Suivi automatique des images consultées
-- Horodatage des consultations
-- Possibilité d'ajouter aux favoris depuis l'historique
-- Effacement de l'historique
+### Runtime et framework
 
----
-
-## 🛠️ Stack technique
-
-### Framework & Runtime
-| Technologie | Version | Rôle |
-|-------------|---------|------|
-| **Expo** | 54.0.20 | Framework de développement React Native |
-| **React Native** | 0.81.5 | Framework UI mobile cross-platform |
-| **React** | 19.1.0 | Bibliothèque UI |
-| **TypeScript** | 5.9.2 | Typage statique |
+| Technologie | Version | Role |
+| --- | --- | --- |
+| Expo | 54.0.20 | Tooling et runtime React Native |
+| React Native | 0.81.5 | Framework mobile cross-platform |
+| React | 19.1.0 | Moteur de rendu |
+| TypeScript | 5.9.2 | Typage statique |
 
 ### Navigation
-| Bibliothèque | Rôle |
-|--------------|------|
-| **@react-navigation/native** | Core de navigation |
-| **@react-navigation/bottom-tabs** | Navigation par onglets |
-| **react-native-screens** | Optimisation des écrans natifs |
-| **react-native-safe-area-context** | Gestion des zones sécurisées |
 
-### Stockage & Données
-| Bibliothèque | Rôle |
-|--------------|------|
-| **@react-native-async-storage/async-storage** | Persistance locale (favoris, historique) |
-| **axios** | Client HTTP (disponible) |
-| **fetch API** | Appels REST vers les APIs NASA |
+| Bibliotheque | Role |
+| --- | --- |
+| @react-navigation/native | Conteneur de navigation |
+| @react-navigation/bottom-tabs | Navigation par onglets |
+| @react-navigation/native-stack | Navigation stack (support projet) |
+| react-native-screens | Optimisation native des ecrans |
+| react-native-safe-area-context | Gestion des safe areas |
 
-### UI & Composants
-| Bibliothèque | Rôle |
-|--------------|------|
-| **@expo/vector-icons (Ionicons)** | Icônes vectorielles |
-| **@react-native-community/datetimepicker** | Sélecteur de date natif |
+### Donnees et stockage
 
-### APIs externes
-| API | Endpoint | Description |
-|-----|----------|-------------|
-| **NASA APOD** | `/planetary/apod` | Image astronomique du jour |
-| **NASA Mars Rover Photos** | `/mars-photos/api/v1/rovers/{rover}/photos` | Photos des rovers |
-| **NASA EPIC** | `/EPIC/api/natural/date/{date}` | Images de la Terre |
+| Bibliotheque | Role |
+| --- | --- |
+| fetch API | Appels HTTP NASA |
+| @react-native-async-storage/async-storage | Persistance locale |
 
----
+### UI
 
-## 📁 Architecture du projet
+| Bibliotheque | Role |
+| --- | --- |
+| @expo/vector-icons | Iconographie onglets/actions |
+| @react-native-community/datetimepicker | Selection de date native |
+| expo-splash-screen | Controle du splash au demarrage |
 
-```
+### APIs NASA integrees
+
+| API | Endpoint principal | Usage |
+| --- | --- | --- |
+| APOD | `/planetary/apod` | Image du jour |
+| NeoWs Feed | `/neo/rest/v1/feed` | Objets proches de la Terre |
+| DONKI | `/DONKI/{type}` | Evenements de meteo spatiale (FLR, CME, GST, etc.) |
+
+## Architecture globale
+
+```text
 SpaceExplorer/
-├── App.tsx                    # Point d'entrée de l'application
-├── index.js                   # Enregistrement du composant racine
-├── app.json                   # Configuration Expo
-├── package.json               # Dépendances et scripts
-├── tsconfig.json              # Configuration TypeScript
-│
-├── assets/                    # Ressources statiques
-│   ├── icon.png
-│   ├── splash-icon.png
-│   └── ...
-│
+├── App.tsx
+├── app.json
+├── assets/
 └── src/
-    ├── config.ts              # Configuration (clé API)
-    │
-    ├── hooks/                 # Hooks personnalisés
-    │   ├── useFavorites.ts    # Gestion des favoris
-    │   └── useHistory.ts      # Gestion de l'historique
-    │
+    ├── config.ts
+    ├── hooks/
+    │   ├── useFavorites.tsx
+    │   └── useHistory.ts
     ├── navigation/
-    │   └── AppNavigation.tsx  # Configuration de la navigation
-    │
-    ├── screens/               # Écrans de l'application
-    │   ├── HomeScreen.tsx     # Accueil
-    │   ├── APODScreen.tsx     # Image du jour
-    │   ├── MarsScreen.tsx     # Photos Mars
-    │   ├── EPICScreen.tsx     # Images Terre
+    │   └── AppNavigation.tsx
+    ├── screens/
+    │   ├── HomeScreen.tsx
+    │   ├── APODScreen.tsx
+    │   ├── NeoWsScreen.tsx
+    │   ├── DONKIScreen.tsx
     │   ├── FavoritesScreen.tsx
     │   ├── HistoryScreen.tsx
     │   └── AboutScreen.tsx
-    │
     ├── services/
-    │   └── nasa.ts            # Appels API NASA centralisés
-    │
+    │   └── nasa.ts
     ├── types/
-    │   ├── storage.ts         # Types pour le stockage
-    │   └── errors.ts          # Types d'erreurs API
-    │
+    │   ├── errors.ts
+    │   └── storage.ts
     └── ui/
-        ├── theme.ts           # Design system (couleurs, espacements)
-        └── components/        # Composants réutilisables
-            ├── Screen.tsx
-            ├── Card.tsx
-            ├── Title.tsx
-            ├── PrimaryButton.tsx
-            ├── Loader.tsx
-            ├── FavoriteButton.tsx
-            ├── ErrorDisplay.tsx
-            └── OptimizedImage.tsx
+        ├── theme.ts
+        └── components/
 ```
 
-### Organisation logique
+Principes d'organisation :
 
-| Couche | Responsabilité |
-|--------|----------------|
-| **screens/** | Logique métier et composition des vues |
-| **ui/components/** | Composants UI réutilisables (design system) |
-| **services/** | Abstraction des appels API |
-| **hooks/** | Logique réutilisable avec état (favoris, historique) |
-| **types/** | Définitions TypeScript partagées |
+- `services/` : encapsulation des appels NASA et normalisation des donnees.
+- `screens/` : orchestration des cas d'usage et rendu des etats UI.
+- `ui/components/` : design system reutilisable (`Screen`, `Card`, `Title`, `PrimaryButton`, `Loader`).
+- `hooks/` : logique transverse de persistance (`favoris`, `historique`).
 
----
+## Installation et lancement
 
-## 🚀 Installation et lancement
+Prerequis :
 
-### Prérequis
+- Node.js 18+
+- npm
+- Expo Go (test mobile)
 
-- **Node.js** 18+ 
-- **npm** ou **yarn**
-- **Expo CLI** (installé globalement ou via npx)
-- **Expo Go** sur appareil mobile (iOS/Android) pour le test
-
-### Installation
+Installation :
 
 ```bash
-# Cloner le repository
-git clone <url-du-repository>
+git clone <url-du-repo>
 cd SpaceExplorer
-
-# Installer les dépendances
 npm install
 ```
 
-### Lancement
+Lancement :
 
 ```bash
-# Démarrer le serveur de développement Expo
 npm start
-# ou
-npx expo start
+npm run android
+npm run ios
+npm run web
 ```
 
-Options de lancement :
-- **`npm run android`** : Lancer sur émulateur/appareil Android
-- **`npm run ios`** : Lancer sur simulateur/appareil iOS (macOS requis)
-- **`npm run web`** : Lancer dans le navigateur
+## Configuration
 
-### Scanner le QR Code
+Configurer la cle API NASA dans `src/config.ts` :
 
-Une fois le serveur démarré, scanner le QR code affiché dans le terminal avec l'application **Expo Go** pour tester sur un appareil physique.
-
----
-
-## 🔧 Configuration
-
-### Clé API NASA
-
-L'application utilise une clé API NASA configurée dans `src/config.ts`. Pour obtenir votre propre clé :
-
-1. Rendez-vous sur [https://api.nasa.gov/](https://api.nasa.gov/)
-2. Remplissez le formulaire d'inscription
-3. Récupérez votre clé API
-4. Remplacez la valeur dans `src/config.ts`
-
-```typescript
+```ts
 export const NASA_API_KEY = "VOTRE_CLE_API";
 ```
 
-> **Note** : La clé `DEMO_KEY` peut être utilisée pour des tests limités (30 requêtes/heure).
+Reference : https://api.nasa.gov/
 
----
+## Axes d'amelioration
 
-## 📈 Axes d'amélioration
+- Ajouter des tests unitaires et d'integration (services + ecrans critiques).
+- Renforcer le cache local et la strategie hors-ligne.
+- Ajouter une meilleure vulgarisation des evenements DONKI selon leur type.
+- Introduire une telemetrie UX (temps de chargement, taux d'erreur API).
+- Preparer une industrialisation CI/CD (lint, type-check, build Expo).
 
-### Fonctionnalités
-- [ ] Recherche d'images par mots-clés (NASA Image Library)
-- [ ] Notifications pour l'APOD du jour
-- [ ] Partage d'images sur les réseaux sociaux
-- [ ] Mode hors-ligne avec cache d'images
-- [ ] Widget pour l'écran d'accueil
+## Auteur
 
-### Technique
-- [ ] Mise en cache des réponses API (React Query / SWR)
-- [ ] Tests unitaires et d'intégration
-- [ ] Pagination infinie pour les listes d'images
-- [ ] Animations et transitions (Reanimated)
-- [ ] Support du mode sombre/clair dynamique
-
-### UX/UI
-- [ ] Zoom et galerie d'images plein écran
-- [ ] Filtres par caméra pour Mars Rover
-- [ ] Calendrier visuel pour la sélection de dates
-- [ ] Skeleton loaders pour un meilleur feedback
-
----
-
-## 👤 Auteur
-
-**Florentin Portets**  
-Étudiant en Master - Ynov Campus  
-Développeur Full Stack
-
----
-
-## 📄 Licence
-
-Ce projet est réalisé dans un cadre académique. Les données utilisées proviennent des [NASA Open APIs](https://api.nasa.gov/) et sont soumises à leurs conditions d'utilisation.
-
----
-
-## 🙏 Remerciements
-
-- **NASA** pour la mise à disposition gratuite de leurs APIs
-- **Expo** et la communauté React Native pour l'écosystème de développement
-- **Ynov Campus** pour l'encadrement pédagogique
+Florentin Portets  
+Etudiant Master - Ynov Campus
 
