@@ -18,7 +18,7 @@ import { theme } from "../ui/theme";
 import { useFavorites } from "../hooks/useFavorites";
 import { useHistory } from "../hooks/useHistory";
 import { SavedImage } from "../types/storage";
-import { ApiError, createApiError, createEmptyDataError } from "../types/errors";
+import { ApiError, createApiError } from "../types/errors";
 
 type RoverOption = {
     label: string;

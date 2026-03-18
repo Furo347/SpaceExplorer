@@ -18,6 +18,8 @@ export const CONTEXTUAL_EMPTY_MESSAGES = {
     apod: "Aucune image astronomique disponible pour cette date.",
     mars: "Aucune photo trouvée pour ce rover à cette date.",
     epic: "Aucune image de la Terre disponible pour cette date. Essayez une date antérieure.",
+    neows: "Aucun objet proche de la Terre disponible pour cette date.",
+    donki: "Aucun evenement DONKI disponible sur cette plage de dates.",
 };
 
 export function createApiError(error: unknown, context?: keyof typeof CONTEXTUAL_EMPTY_MESSAGES): ApiError {

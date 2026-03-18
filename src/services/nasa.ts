@@ -53,6 +53,75 @@ export type EPICImage = {
     };
 };
 
+export type NeoWsLinkCollection = {
+    next?: string;
+    prev?: string;
+    self?: string;
+};
+
+export type NeoWsEstimatedDiameter = {
+    estimated_diameter_min: number;
+    estimated_diameter_max: number;
+};
+
+export type NeoWsAsteroid = {
+    id: string;
+    neo_reference_id: string;
+    name: string;
+    nasa_jpl_url: string;
+    absolute_magnitude_h: number;
+    estimated_diameter: {
+        kilometers: NeoWsEstimatedDiameter;
+        meters: NeoWsEstimatedDiameter;
+        miles: NeoWsEstimatedDiameter;
+        feet: NeoWsEstimatedDiameter;
+    };
+    is_potentially_hazardous_asteroid: boolean;
+    is_sentry_object: boolean;
+    close_approach_data: Array<{
+        close_approach_date: string;
+        close_approach_date_full?: string;
+        epoch_date_close_approach?: number;
+        orbiting_body: string;
+        relative_velocity: {
+            kilometers_per_second: string;
+            kilometers_per_hour: string;
+            miles_per_hour: string;
+        };
+        miss_distance: {
+            astronomical: string;
+            lunar: string;
+            kilometers: string;
+            miles: string;
+        };
+    }>;
+};
+
+export type NeoWsFeedResponse = {
+    links: NeoWsLinkCollection;
+    element_count: number;
+    near_earth_objects: Record<string, NeoWsAsteroid[]>;
+};
+
+export type DonkiEventType =
+    | "all"
+    | "FLR"
+    | "SEP"
+    | "CME"
+    | "IPS"
+    | "MPC"
+    | "GST"
+    | "RBE"
+    | "report";
+
+export type DonkiEvent = {
+    messageID: string;
+    messageType: string;
+    messageIssueTime: string;
+    messageURL: string;
+    messageBody: string;
+};
+
 /* ============================
    API Core
 ============================ */
@@ -61,12 +130,53 @@ const NASA_BASE_URL = "https://api.nasa.gov";
 
 const API_TIMEOUT = 15000;
 
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const NEO_WS_MAX_RANGE_DAYS = 7;
+
 const DEBUG_MODE = __DEV__ ?? true;
 
 function debugLog(message: string, data?: any) {
     if (DEBUG_MODE) {
-        console.log(`[NASA API] ${message}`, data !== undefined ? data : "");
+        console.log(`[NASA API] ${message}`, data ?? "");
     }
+}
+
+function assertIsoDate(date: string, fieldName: string): void {
+    if (!ISO_DATE_REGEX.test(date)) {
+        debugLog(`Invalid ${fieldName} format: ${date}`);
+        throw new ApiHttpError(400, `Format de date invalide pour ${fieldName}: ${date}. Format attendu: YYYY-MM-DD`);
+    }
+}
+
+function parseIsoDate(date: string, fieldName: string): Date {
+    assertIsoDate(date, fieldName);
+
+    const parsed = new Date(`${date}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new ApiHttpError(400, `Date invalide pour ${fieldName}: ${date}`);
+    }
+
+    return parsed;
+}
+
+function diffDays(startDate: string, endDate: string): number {
+    const start = parseIsoDate(startDate, "startDate");
+    const end = parseIsoDate(endDate, "endDate");
+    const millisecondsPerDay = 1000 * 60 * 60 * 24;
+    return Math.floor((end.getTime() - start.getTime()) / millisecondsPerDay);
+}
+
+function normalizeApiError(error: unknown, fallbackMessage: string): ApiHttpError {
+    if (error instanceof ApiHttpError) {
+        return error;
+    }
+
+    if (error instanceof Error) {
+        return new ApiHttpError(503, `${fallbackMessage} (${error.message})`);
+    }
+
+    return new ApiHttpError(503, fallbackMessage);
 }
 
 async function fetchWithTimeout(url: string, timeout: number = API_TIMEOUT): Promise<Response> {
@@ -128,6 +238,60 @@ export function getAPOD(date?: string): Promise<APODResponse> {
     });
 }
 
+export async function getNearEarthObjects(date: string): Promise<NeoWsAsteroid[]> {
+    assertIsoDate(date, "date");
+
+    debugLog(`Fetching NeoWs feed for date: ${date}`);
+
+    try {
+        const data = await apiGet<NeoWsFeedResponse>("/neo/rest/v1/feed", {
+            start_date: date,
+            end_date: date,
+        });
+
+        const asteroids = data.near_earth_objects?.[date] ?? [];
+        debugLog(`NeoWs asteroids received for ${date}: ${asteroids.length}`);
+
+        return asteroids;
+    } catch (error) {
+        debugLog("NeoWs API error:", error);
+        throw normalizeApiError(error, "Service NeoWs temporairement indisponible");
+    }
+}
+
+export async function getDonkiEvents(startDate: string, endDate: string): Promise<DonkiEvent[]> {
+    const rangeDays = diffDays(startDate, endDate);
+
+    if (rangeDays < 0) {
+        throw new ApiHttpError(400, "La date de fin doit être supérieure ou égale à la date de début.");
+    }
+
+    if (rangeDays > NEO_WS_MAX_RANGE_DAYS) {
+        throw new ApiHttpError(400, "La plage de dates est trop grande. Limite: 7 jours.");
+    }
+
+    debugLog(`Fetching DONKI events from ${startDate} to ${endDate}`);
+
+    try {
+        const data = await apiGet<DonkiEvent[]>("/DONKI/notifications", {
+            startDate,
+            endDate,
+            type: "all",
+        });
+
+        if (!Array.isArray(data)) {
+            debugLog("DONKI response is not an array:", typeof data);
+            return [];
+        }
+
+        debugLog(`DONKI events received: ${data.length}`);
+        return data;
+    } catch (error) {
+        debugLog("DONKI API error:", error);
+        throw normalizeApiError(error, "Service DONKI temporairement indisponible");
+    }
+}
+
 export async function getMarsPhotos(
     rover: string,
     date: string
@@ -141,11 +305,7 @@ export async function getMarsPhotos(
         throw new ApiHttpError(400, `Rover invalide: ${rover}. Rovers valides: ${validRovers.join(", ")}`);
     }
 
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-        debugLog(`Invalid date format: ${date}`);
-        throw new ApiHttpError(400, `Format de date invalide: ${date}. Format attendu: YYYY-MM-DD`);
-    }
+    assertIsoDate(date, "date");
 
     debugLog(`Fetching Mars photos for rover: ${normalizedRover}, date: ${date}`);
 
@@ -197,11 +357,7 @@ export async function searchImages(
 }
 
 export async function getEPICImages(date: string): Promise<EPICImage[]> {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-        debugLog(`Invalid date format: ${date}`);
-        throw new ApiHttpError(400, `Format de date invalide: ${date}. Format attendu: YYYY-MM-DD`);
-    }
+    assertIsoDate(date, "date");
 
     debugLog(`Fetching EPIC images for date: ${date}`);
 

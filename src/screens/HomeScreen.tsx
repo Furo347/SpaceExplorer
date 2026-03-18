@@ -12,7 +12,25 @@ import { RootTabParamList } from "../navigation/AppNavigation";
 
 type HomeNavigationProp = BottomTabNavigationProp<RootTabParamList>;
 
-const FEATURES = [
+type FeatureRoute = "APOD" | "NeoWs" | "DONKI";
+type QuickLinkRoute = "Favorites" | "History" | "About";
+
+type FeatureItem = {
+    screen: FeatureRoute;
+    icon: keyof typeof Ionicons.glyphMap;
+    title: string;
+    subtitle: string;
+    description: string;
+    color: string;
+};
+
+type QuickLinkItem = {
+    screen: QuickLinkRoute;
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+};
+
+const FEATURES: FeatureItem[] = [
     {
         screen: "APOD" as const,
         icon: "image" as const,
@@ -22,24 +40,24 @@ const FEATURES = [
         color: "#FF6B6B",
     },
     {
-        screen: "MarsRover" as const,
+        screen: "NeoWs" as const,
         icon: "planet" as const,
-        title: "Mars Rover",
-        subtitle: "Exploration",
-        description: "Explorez Mars à travers les yeux des rovers Curiosity, Opportunity et Spirit.",
+        title: "Near Earth Objects",
+        subtitle: "NeoWs",
+        description: "Consultez les objets proches de la Terre detectes sur la date de votre choix.",
         color: "#FF9F43",
     },
     {
-        screen: "EPIC" as const,
-        icon: "earth" as const,
-        title: "EPIC Terre",
-        subtitle: "Satellite DSCOVR",
-        description: "Admirez notre planète bleue photographiée depuis l'espace chaque jour.",
+        screen: "DONKI" as const,
+        icon: "flash" as const,
+        title: "DONKI",
+        subtitle: "Meteo spatiale",
+        description: "Suivez les notifications recentes de meteo spatiale diffusees par la NASA.",
         color: "#54A0FF",
     },
 ];
 
-const QUICK_LINKS = [
+const QUICK_LINKS: QuickLinkItem[] = [
     { screen: "Favorites" as const, icon: "star" as const, label: "Favoris" },
     { screen: "History" as const, icon: "time" as const, label: "Historique" },
     { screen: "About" as const, icon: "information-circle" as const, label: "À propos" },
@@ -83,11 +101,11 @@ export default function HomeScreen() {
                 <Title size="md" style={{ marginBottom: 15 }}>
                     Explorer
                 </Title>
-                {FEATURES.map((feature, index) => (
+                {FEATURES.map((feature) => (
                     <TouchableOpacity
-                        key={index}
+                        key={feature.screen}
                         activeOpacity={0.8}
-                        onPress={() => navigation.navigate(feature.screen)}
+                        onPress={() => navigation.navigate(feature.screen as never)}
                     >
                         <Card style={{ marginBottom: 15 }}>
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -152,11 +170,11 @@ export default function HomeScreen() {
                     Accès rapide
                 </Title>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    {QUICK_LINKS.map((link, index) => (
+                    {QUICK_LINKS.map((link) => (
                         <TouchableOpacity
-                            key={index}
+                            key={link.screen}
                             activeOpacity={0.8}
-                            onPress={() => navigation.navigate(link.screen)}
+                            onPress={() => navigation.navigate(link.screen as never)}
                             style={{ flex: 1, marginHorizontal: 5 }}
                         >
                             <Card style={{ alignItems: "center", paddingVertical: 20 }}>

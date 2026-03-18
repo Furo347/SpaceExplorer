@@ -6,8 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import HomeScreen from "../screens/HomeScreen";
 import APODScreen from "../screens/APODScreen";
-import MarsRoverScreen from "../screens/MarsScreen";
-import EPICScreen from "../screens/EPICScreen";
+import NeoWsScreen from "../screens/NeoWsScreen";
+import DONKIScreen from "../screens/DONKIScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import AboutScreen from "../screens/AboutScreen";
@@ -30,14 +30,24 @@ const SpaceExplorerTheme: Theme = {
 export type RootTabParamList = {
     Home: undefined;
     APOD: undefined;
-    MarsRover: undefined;
-    EPIC: undefined;
+    NeoWs: undefined;
+    DONKI: undefined;
     Favorites: undefined;
     History: undefined;
     About: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
+
+const TAB_ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
+    Home: "home",
+    APOD: "image",
+    NeoWs: "planet",
+    DONKI: "flash",
+    Favorites: "star",
+    History: "time",
+    About: "information-circle",
+};
 
 export default function AppNavigation() {
     return (
@@ -59,25 +69,13 @@ export default function AppNavigation() {
                         paddingTop: theme.spacing.sm,
                         paddingBottom: Platform.OS === "ios" ? 25 : theme.spacing.sm,
                     },
-                    tabBarIcon: ({ color, size }) => {
-                        let iconName: keyof typeof Ionicons.glyphMap = "home";
-
-                        if (route.name === "Home") iconName = "home";
-                        else if (route.name === "APOD") iconName = "image";
-                        else if (route.name === "MarsRover") iconName = "planet";
-                        else if (route.name === "EPIC") iconName = "earth";
-                        else if (route.name === "Favorites") iconName = "star";
-                        else if (route.name === "History") iconName = "time";
-                        else if (route.name === "About") iconName = "information-circle";
-
-                        return <Ionicons name={iconName} size={size + 2} color={color} />;
-                    },
+                    tabBarIcon: ({ color, size }) => <Ionicons name={TAB_ICONS[route.name]} size={size + 2} color={color} />,
                 })}
             >
                 <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Accueil" }} />
                 <Tab.Screen name="APOD" component={APODScreen} options={{ title: "Image du jour" }} />
-                <Tab.Screen name="MarsRover" component={MarsRoverScreen} options={{ title: "Rover Mars" }} />
-                <Tab.Screen name="EPIC" component={EPICScreen} options={{ title: "EPIC Terre" }} />
+                <Tab.Screen name="NeoWs" component={NeoWsScreen} options={{ title: "NeoWs" }} />
+                <Tab.Screen name="DONKI" component={DONKIScreen} options={{ title: "DONKI" }} />
                 <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: "Favoris" }} />
                 <Tab.Screen name="History" component={HistoryScreen} options={{ title: "Historique" }} />
                 <Tab.Screen name="About" component={AboutScreen} options={{ title: "À propos" }} />

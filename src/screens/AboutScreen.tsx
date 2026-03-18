@@ -15,13 +15,13 @@ const FEATURES = [
     },
     {
         icon: "planet" as const,
-        title: "Mars Rover",
-        description: "Explorez les photos prises par les rovers Curiosity, Opportunity et Spirit.",
+        title: "NeoWs",
+        description: "Consultez les objets proches de la Terre detectes par la NASA.",
     },
     {
-        icon: "earth" as const,
-        title: "EPIC",
-        description: "Admirez la Terre depuis l'espace grâce au satellite DSCOVR.",
+        icon: "flash" as const,
+        title: "DONKI",
+        description: "Suivez les notifications recentes de meteo spatiale NASA.",
     },
     {
         icon: "star" as const,
@@ -84,8 +84,8 @@ export default function AboutScreen() {
                 <Title size="md" style={{ marginBottom: 15 }}>
                     Fonctionnalités
                 </Title>
-                {FEATURES.map((feature, index) => (
-                    <Card key={index} style={{ marginBottom: 10 }}>
+                {FEATURES.map((feature) => (
+                    <Card key={feature.title} style={{ marginBottom: 10 }}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                             <View
                                 style={{
@@ -129,7 +129,7 @@ export default function AboutScreen() {
                 <Card>
                     {TEAM.map((member, index) => (
                         <View
-                            key={index}
+                            key={member.name}
                             style={{
                                 flexDirection: "row",
                                 alignItems: "center",
