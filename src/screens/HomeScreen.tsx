@@ -42,7 +42,7 @@ const FEATURES: FeatureItem[] = [
     {
         screen: "NeoWs" as const,
         icon: "planet" as const,
-        title: "Near Earth Objects",
+        title: "Objets Proches",
         subtitle: "NeoWs",
         description: "Consultez les objets proches de la Terre detectes sur la date de votre choix.",
         color: "#FF9F43",
@@ -50,8 +50,8 @@ const FEATURES: FeatureItem[] = [
     {
         screen: "DONKI" as const,
         icon: "flash" as const,
-        title: "DONKI",
-        subtitle: "Meteo spatiale",
+        title: "Météo spatiale",
+        subtitle: "DONKI",
         description: "Suivez les notifications recentes de meteo spatiale diffusees par la NASA.",
         color: "#54A0FF",
     },

@@ -74,8 +74,8 @@ export default function AppNavigation() {
             >
                 <Tab.Screen name="Home" component={HomeScreen} options={{ title: "Accueil" }} />
                 <Tab.Screen name="APOD" component={APODScreen} options={{ title: "Image du jour" }} />
-                <Tab.Screen name="NeoWs" component={NeoWsScreen} options={{ title: "NeoWs" }} />
-                <Tab.Screen name="DONKI" component={DONKIScreen} options={{ title: "DONKI" }} />
+                <Tab.Screen name="NeoWs" component={NeoWsScreen} options={{ title: "Objets Proches" }} />
+                <Tab.Screen name="DONKI" component={DONKIScreen} options={{ title: "Météo Spatiale" }} />
                 <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: "Favoris" }} />
                 <Tab.Screen name="History" component={HistoryScreen} options={{ title: "Historique" }} />
                 <Tab.Screen name="About" component={AboutScreen} options={{ title: "À propos" }} />
